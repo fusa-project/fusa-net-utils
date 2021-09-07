@@ -9,7 +9,6 @@ from .external_datasets import ESC, UrbanSound8K
 class FUSA_dataset(Dataset):
 
     def __init__(self, dataset: ConcatDataset, feature_params: Dict, waveform_transform=None):
-        #self.dataset = ConcatDataset([ESC(datasets_path), UrbanSound8K(datasets_path)])
         self.dataset = dataset
         self.categories = []
         for d in self.dataset.datasets:
@@ -47,8 +46,8 @@ class FUSA_dataset(Dataset):
         return d
 
 class FUSAv1(FUSA_dataset):
-    def __init__(self, datasets_path, feature_params, waveform_transform=None):
-        dataset = ConcatDataset([ESC(datasets_path), UrbanSound8K(datasets_path)])
+    def __init__(self, datasets_repo_path, feature_params, waveform_transform=None):
+        dataset = ConcatDataset([ESC(datasets_repo_path), UrbanSound8K(datasets_repo_path)])
         super().__init__(dataset, feature_params, waveform_transform)
 
         
