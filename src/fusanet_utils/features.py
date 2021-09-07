@@ -27,7 +27,12 @@ def waveform_preprocessing(waveform: torch.Tensor, origin_sr: int, params: Dict)
     else:
         return waveform
 
+
+
 class LogMelTransform:
+    """
+    Make abstract class for offline feature transformations
+    """
     # TODO: (1) cortar en waveform si hay más de 512 zeros seguidos (2) buscar valor absoluto minimo en espectrograma mel (proxy del ruido)
     def __init__(self, waveform_path: str, params: Dict={}, eps: float=1e-3):
         self.logmel_path = splitext(waveform_path)[0]+"_logmel.pt"
@@ -44,7 +49,12 @@ def compute_logmel(waveform, params, eps=1e-3):
     sample_rate = params["sampling_rate"]
     mel_params = params["mel_transform"]
     mel_transform = torchaudio.transforms.MelSpectrogram(sample_rate=sample_rate, n_fft=mel_params['n_fft'], hop_length=mel_params['hop_length'], n_mels=mel_params['n_mels'], normalized=mel_params["normalized"])
-    return (mel_transform(waveform)+eps).log()
+    #return (mel_transform(waveform)+eps).log()
+    mel_spectrogram = mel_transform(waveform)
+    eps = torch.min(mel_spectrogram[mel_spectrogram>0.0])
+    return (mel_spectrogram + eps).log10()
+
+
     
 
         

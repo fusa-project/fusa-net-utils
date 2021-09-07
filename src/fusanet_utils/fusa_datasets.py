@@ -50,24 +50,3 @@ class FUSAv1(FUSA_dataset):
         dataset = ConcatDataset([ESC(datasets_repo_path), UrbanSound8K(datasets_repo_path)])
         super().__init__(dataset, feature_params, waveform_transform)
 
-        
-    
-if __name__ == '__main__':
-
-    from torch.utils.data import DataLoader
-    from .transforms import Collate_and_transform, RESIZER
-    import yaml
-    params = yaml.safe_load(open("experiments/ESC/params.yaml"))
-    dataset = FUSA_dataset(ConcatDataset([ESC("./datasets")]), feature_params=params["features"])
-    my_collate = Collate_and_transform(resizer=RESIZER.PAD)
-    loader = DataLoader(dataset, shuffle=True, batch_size=5, collate_fn=my_collate)
-    for batch in loader:
-        break
-    print(batch['waveform'].shape)
-    print(batch['logmel'].shape)
-    print(dataset.label_int2string(batch['label']))    
-    import matplotlib.pyplot as plt
-    fig, ax = plt.subplots(figsize=(8, 4))
-    ax.imshow(batch['logmel'].detach().numpy()[0, 0])
-    
-
