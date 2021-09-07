@@ -1,9 +1,12 @@
 
 import unittest
-from datasets import ESC, UrbanSound8K
 from collections import Counter
+from fusanet_utils.external_datasets import ESC, UrbanSound8K
 
-class test_datasets(unittest.TestCase):
+class test_external_datasets(unittest.TestCase):
+    """
+    TODO: PATH to Datasets!
+    """
 
     def test_ESC(self):
         dataset = ESC('./datasets')
