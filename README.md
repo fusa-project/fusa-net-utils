@@ -1,5 +1,5 @@
 # FUSAnet utils
 
-Install in your environment with 
+For development, clone this repo and install in your environment with 
 
     pip install -e fusanet_utils
