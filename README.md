@@ -1,2 +1,5 @@
-# fusa-net-utils
-Utility functions to train neural networks on FUSA audio data using torch
+# FUSAnet utils
+
+Install in your environment with 
+
+    pip install -e fusanet_utils
