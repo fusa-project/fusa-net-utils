@@ -3,7 +3,7 @@ from sklearn.preprocessing import LabelEncoder
 import torch
 from torch.utils.data import Dataset, ConcatDataset
 
-from .features import get_waveform, LogMelTransform
+from .features import get_waveform, FeatureProcessor
 from .external_datasets import ESC, UrbanSound8K
 
 class FUSA_dataset(Dataset):
@@ -18,10 +18,9 @@ class FUSA_dataset(Dataset):
 
         self.waveform_transform = waveform_transform
         self.params = feature_params
-        # Precompute logmel spectrogram if it does not exist or if overwrite is enabled     
-        if feature_params["use_logmel"]:
-            for file_path, _ in self.dataset:
-                LogMelTransform(file_path, feature_params) 
+        # Precompute features
+        for file_path, _ in self.dataset:
+            FeatureProcessor(self.params).write_features(file_path)            
 
     def __getitem__(self, idx: int) -> Dict:
         file_path, label = self.dataset[idx]
@@ -29,8 +28,7 @@ class FUSA_dataset(Dataset):
         if self.waveform_transform is not None:
             waveform = self.waveform_transform(waveform)
         sample = {'waveform': waveform, 'label': torch.from_numpy(self.le.transform([label]))}
-        if self.params["use_logmel"]:
-            sample['logmel'] = LogMelTransform(file_path)()              
+        sample.update(FeatureProcessor(self.params).read_features(file_path))             
         return sample
 
     def __len__(self) -> int:

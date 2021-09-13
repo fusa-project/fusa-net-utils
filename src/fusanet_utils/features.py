@@ -28,31 +28,64 @@ def waveform_preprocessing(waveform: torch.Tensor, origin_sr: int, params: Dict)
         return waveform
 
 
-
-class LogMelTransform:
-    """
-    Make abstract class for offline feature transformations
-    """
-    # TODO: (1) cortar en waveform si hay más de 512 zeros seguidos (2) buscar valor absoluto minimo en espectrograma mel (proxy del ruido)
-    def __init__(self, waveform_path: str, params: Dict={}, eps: float=1e-3):
-        self.logmel_path = splitext(waveform_path)[0]+"_logmel.pt"
-        overwrite = params["overwrite"] if "overwrite" in params else False
-        if not isfile(self.logmel_path) or overwrite:
-            waveform =  get_waveform(waveform_path, params)
-            logmel = compute_logmel(waveform, params)
-            torch.save(logmel, self.logmel_path)
-
-    def __call__(self):
-        return torch.load(self.logmel_path)
-
-def compute_logmel(waveform, params, eps=1e-3):
+def compute_logmel(waveform, params):
     sample_rate = params["sampling_rate"]
     mel_params = params["mel_transform"]
     mel_transform = torchaudio.transforms.MelSpectrogram(sample_rate=sample_rate, n_fft=mel_params['n_fft'], hop_length=mel_params['hop_length'], n_mels=mel_params['n_mels'], normalized=mel_params["normalized"])
-    #return (mel_transform(waveform)+eps).log()
     mel_spectrogram = mel_transform(waveform)
     eps = torch.min(mel_spectrogram[mel_spectrogram>0.0])
     return (mel_spectrogram + eps).log10()
+
+def compute_mfcc(waveform, params):
+    pass
+
+
+class FeatureProcessor():
+
+    def __init__(self, params: Dict={}):
+        self.params = params
+        self.processors = self.__find_processors()    
+
+    def __find_processors(self) -> Dict:
+        processors = {}
+        if 'mel_transform' in self.params:
+            processors['mel_transform'] = compute_logmel
+        if 'mfcc_transform' in self.params:
+            processors['mfcc_transform'] = compute_mfcc
+        return processors   
+
+    def __feature_path(self, waveform_path: str, feature_name: str) -> str:
+        return splitext(waveform_path)[0]+"_"+feature_name+".pt"    
+
+    def compute_features(self, waveform: torch.Tensor) -> Dict:
+        sample = dict()
+        for feature_name, processor in self.processors.items():
+            sample[feature_name] = processor(waveform)
+        return sample
+        
+    def write_features(self, waveform_path: str) -> None:
+        for feature_name, processor in self.processors.items():
+            feature_path = self.__feature_path(waveform_path, feature_name)
+            if not isfile(feature_path) or self.params["overwrite"]: 
+                waveform =  get_waveform(waveform_path, self.params)
+                feature = processor(waveform, self.params)
+                torch.save(feature, feature_path)
+    
+    def read_features(self, waveform_path: str) -> Dict:
+        sample = dict()
+        for feature_name, _ in self.processors.items():
+            feature_path = self.__feature_path(waveform_path, feature_name)
+            if isfile(feature_path):
+                sample[feature_name] = torch.load(feature_path)
+            else:
+                raise FileNotFoundError("Feature file not found")
+        return sample
+
+    
+
+
+
+
 
 
     

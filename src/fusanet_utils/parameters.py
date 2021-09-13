@@ -8,7 +8,6 @@ def default_params():
 
 def default_logmel_parameters(): 
     params = default_params()
-    params['features']['use_logmel'] = True
     params['features']['overwrite'] = True
     params['features']['mel_transform'] = {}
     params['features']['mel_transform']['n_mels'] = 64

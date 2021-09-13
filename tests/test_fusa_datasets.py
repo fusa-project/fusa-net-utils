@@ -11,8 +11,8 @@ my_collate = Collate_and_transform(resizer=RESIZER.PAD)
 loader = DataLoader(dataset, shuffle=False, batch_size=5, collate_fn=my_collate)
 batch = next(iter(loader))
 print(batch['waveform'].shape)
-print(batch['logmel'].shape)
-print(dataset.label_int2string(batch['label']))   
+print(batch['mel_transform'].shape)
+print(dataset.label_int2string(batch['label']))
 
 #%matplotlib ipympl
 #import matplotlib.pyplot as plt
