@@ -27,6 +27,10 @@ class FeatureProcessor():
         processors = {}
         if 'mel_transform' in self.params:
             processors['mel_transform'] = LogMel(self.params)       
+        if 'mfcc_transform' in self.params:
+            pass
+        if 'rp_transform' in self.params:
+            pass
         return processors   
 
     def compute_features(self, waveform: torch.Tensor) -> Dict:
