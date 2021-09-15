@@ -4,6 +4,7 @@ def default_params():
     params['features']['sampling_rate'] = 8000
     params['features']['number_of_channels'] = 1
     params['features']['combine_channels'] = 'mean'
+    params['features']['collate_resize'] = 'pad'
     return params
 
 def default_logmel_parameters(): 

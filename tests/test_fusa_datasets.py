@@ -1,13 +1,13 @@
 from torch.utils.data import DataLoader, ConcatDataset
 from fusanet_utils.fusa_datasets import FUSA_dataset, ESC
-from fusanet_utils.transforms import Collate_and_transform, RESIZER
+from fusanet_utils.transforms import Collate_and_transform
 from fusanet_utils.parameters import default_logmel_parameters
 
     
 params = default_logmel_parameters()
 path = '/home/phuijse/WORK/FUSA/datasets'
 dataset = FUSA_dataset(ConcatDataset([ESC(path)]), feature_params=params["features"])
-my_collate = Collate_and_transform(resizer=RESIZER.PAD)
+my_collate = Collate_and_transform(params['features'])
 loader = DataLoader(dataset, shuffle=False, batch_size=5, collate_fn=my_collate)
 batch = next(iter(loader))
 print(batch['waveform'].shape)

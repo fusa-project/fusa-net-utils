@@ -2,31 +2,6 @@ import torch
 from torch import Tensor
 from torch.nn.functional import pad
 from typing import Dict, List
-from enum import Enum, auto
-
-class RESIZER(Enum):
-    NONE = auto()
-    PAD = auto()
-    CROP = auto()
-    FIXED = auto() # TODO: Implement FIXED SIZE RESIZER
-
-class StereoToMono(torch.nn.Module):
-    """Convert stereo audio to mono."""
-    def __init__(self) -> None:
-        super().__init__()
-        
-    def forward(self, waveform: Tensor) -> Tensor:
-        r"""
-        Args:
-            waveform (Tensor): Tensor of stereo audio of dimension (..., time).
-
-        Returns:
-            Tensor: Output mono signal of dimension (..., time).
-        """
-        if waveform.size()[0] == 1:
-            return waveform
-        return (torch.mean(waveform, 0)).view(1,-1)
-
 
 def resize(data, target_length):
     if data.size(-1) < target_length:
@@ -44,19 +19,19 @@ def resize(data, target_length):
 
 class Collate_and_transform:
     
-    def __init__(self, transforms: List=[], resizer: Enum=RESIZER.NONE):
+    def __init__(self, params: Dict, transforms: List=[]):
         self.transforms = transforms
-        self.resizer = resizer        
+        self.resizer = params['collate_resize']
         
-    def __call__(self, batch: List[Dict]):
+    def __call__(self, batch: List[Dict]) -> Tensor:
         data_keys = list(batch[0].keys())
         data_keys.remove('label')
         for key in data_keys:
-            if self.resizer is not RESIZER.NONE:
+            if not self.resizer == 'none':
                 lens = [sample[key].size(-1) for sample in batch]  
-                if self.resizer is RESIZER.PAD:
+                if self.resizer == 'pad':
                     target_length = max(lens)
-                elif self.resizer is RESIZER.CROP:
+                elif self.resizer == 'crop':
                     target_length = min(lens)
                 for sample in batch:
                     sample[key] = resize(sample[key], target_length)
