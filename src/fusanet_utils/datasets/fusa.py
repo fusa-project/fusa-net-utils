@@ -3,9 +3,9 @@ from sklearn.preprocessing import LabelEncoder
 import torch
 from torch.utils.data import Dataset, ConcatDataset
 
-from .features import FeatureProcessor
-from .waveform_utils import get_waveform
-from .external_datasets import ESC, UrbanSound8K
+from ..features.processor import FeatureProcessor
+from ..features.waveform import get_waveform
+from .external import ESC, UrbanSound8K
 
 class FUSA_dataset(Dataset):
 

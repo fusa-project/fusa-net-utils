@@ -1,7 +1,7 @@
 
 import unittest
 from collections import Counter
-from fusanet_utils.external_datasets import ESC, UrbanSound8K
+from fusanet_utils.datasets.external import ESC, UrbanSound8K
 
 class test_external_datasets(unittest.TestCase):
     """

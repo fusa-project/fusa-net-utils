@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from os.path import isfile, splitext
 import torch
 
-from .waveform_utils import get_waveform
+from .waveform import get_waveform
 
 class Feature(ABC):
     
@@ -31,3 +31,4 @@ class Feature(ABC):
             return torch.load(feature_path)
         else:
             raise FileNotFoundError("Feature file not found")
+

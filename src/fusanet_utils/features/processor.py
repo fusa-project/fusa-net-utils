@@ -2,8 +2,7 @@ from typing import Dict
 import torch
 import torchaudio
 
-from .features_base import Feature
-
+from .base import Feature
 
 class LogMel(Feature):
 

@@ -1,5 +1,6 @@
 from torch.utils.data import DataLoader, ConcatDataset
-from fusanet_utils.fusa_datasets import FUSA_dataset, ESC
+from fusanet_utils.datasets.external import ESC
+from fusanet_utils.datasets.fusa import FUSA_dataset
 from fusanet_utils.transforms import Collate_and_transform
 from fusanet_utils.parameters import default_logmel_parameters
 
