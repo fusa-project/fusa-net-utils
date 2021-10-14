@@ -13,6 +13,6 @@ def default_logmel_parameters():
     params['features']['mel_transform'] = {}
     params['features']['mel_transform']['n_mels'] = 64
     params['features']['mel_transform']['n_fft'] = 512
-    params['features']['mel_transform']['hop_length'] = 512
+    params['features']['mel_transform']['hop_length'] = 256
     params['features']['mel_transform']['normalized'] = False
     return params
