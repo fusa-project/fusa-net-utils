@@ -3,7 +3,6 @@ import csv
 import wave
 import json
 import numpy as np
-import torch
 from torch.utils.data import DataLoader, ConcatDataset
 
 from fusanet_utils.datasets.external import ESC, UrbanSound8K
@@ -39,15 +38,15 @@ def mock_esc50(tmp_path_factory):
             ['1-100032-A-0.wav', '1', '0', 'dog', 'True', '100032', 'A'])
 
     # Create mock  audio
-    samplerate = 44100
-    t = np.linspace(0, 1, samplerate)
+    sampling_rate = 44100
+    t = np.linspace(0, 1, sampling_rate)
     audio = 0.5 * np.sin(2 * np.pi * 440.0 * t)
     audio = np.array([audio, audio]).T
     audio = (audio * (2**15 - 1)).astype("<h")
     with wave.open(str(audio_folder / "1-100032-A-0.wav"), "wb") as f:
         f.setnchannels(2)
         f.setsampwidth(2)
-        f.setframerate(samplerate)
+        f.setframerate(sampling_rate)
         f.writeframes(audio.tobytes())
 
     return datasets_path
@@ -69,5 +68,8 @@ def test_fusa_esc(mock_esc50):
                         batch_size=1,
                         collate_fn=my_collate)
     batch = next(iter(loader))
-    assert batch["mel_transform"].shape == torch.Size([1, 1, 64, 16])
+    assert batch["mel_transform"].ndims == 4
+    assert batch["mel_transform"].shape[1] == 1
+    assert batch["mel_transform"].shape[2] == 64
+    assert batch["mel_transform"].shape[3] == 16
     assert dataset.label_int2string(batch['label'])[0] == "animal/dog"
