@@ -31,7 +31,9 @@ def waveform_preprocessing(waveform: torch.Tensor, origin_sr: int, params: Dict)
             if how_to == 'zscore':
                 waveform = (waveform - torch.mean(waveform))/torch.std(waveform)
             elif how_to == 'minmax':
-                pass
+                wave_min = torch.min(waveform)
+                wave_max = torch.max(waveform)
+                waveform = (waveform - wave_min)/(wave_max - wave_min)
             elif how_to == 'rms':
                 pass
             elif how_to == 'peak':
