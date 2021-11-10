@@ -6,7 +6,7 @@ def default_params():
     params['features']['combine_channels'] = 'mean'
     params['features']['collate_resize'] = 'pad'
     params['features']['waveform_normalization'] = {}
-    params['features']['waveform_normalization']['scope'] = 'local' 
+    params['features']['waveform_normalization']['scope'] = 'local' # local, global
     params['features']['waveform_normalization']['type'] = 'zscore' 
     return params
 

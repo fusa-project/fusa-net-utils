@@ -25,15 +25,16 @@ def waveform_preprocessing(waveform: torch.Tensor, origin_sr: int, params: Dict)
     if target_ch == 2 and origin_ch == 1:
         waveform = waveform.repeat(2, 1)
     
-    if params['waveform_normalization']['scope'] == 'local':
-        how_to = params['waveform_normalization']['type']
-        if how_to == 'zscore':
-            waveform = (waveform - torch.mean(waveform))/torch.std(waveform)
-        elif how_to == 'minmax':
-            pass
-        elif how_to == 'rms':
-            pass
-        elif how_to == 'peak':
-            pass
+    if 'waveform_normalization' in params:
+        if params['waveform_normalization']['scope'] == 'local':
+            how_to = params['waveform_normalization']['type']
+            if how_to == 'zscore':
+                waveform = (waveform - torch.mean(waveform))/torch.std(waveform)
+            elif how_to == 'minmax':
+                pass
+            elif how_to == 'rms':
+                pass
+            elif how_to == 'peak':
+                pass
 
     return waveform
