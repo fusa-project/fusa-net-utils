@@ -16,12 +16,24 @@ def waveform_preprocessing(waveform: torch.Tensor, origin_sr: int, params: Dict)
     if target_ch == 1 and origin_ch == 2:
         how_to = params['combine_channels']
         if how_to == 'mean':
-            return torch.mean(waveform, dim=0, keepdim=True)
+            waveform =  torch.mean(waveform, dim=0, keepdim=True)
         elif how_to == 'left':
-            return waveform[0, :].view(1,-1)
+            waveform = waveform[0, :].view(1,-1)
         elif how_to == 'right':
-            return waveform[1, :].view(1,-1)
-    elif target_ch == 2 and origin_ch == 1:
-        return waveform.repeat(2, 1)
-    else:
-        return waveform
+            waveform = waveform[1, :].view(1,-1)
+    
+    if target_ch == 2 and origin_ch == 1:
+        waveform = waveform.repeat(2, 1)
+    
+    if params['waveform_normalization']['scope'] == 'local':
+        how_to = params['waveform_normalization']['type']
+        if how_to == 'zscore':
+            waveform = (waveform - torch.mean(waveform))/torch.std(waveform)
+        elif how_to == 'minmax':
+            pass
+        elif how_to == 'rms':
+            pass
+        elif how_to == 'peak':
+            pass
+
+    return waveform

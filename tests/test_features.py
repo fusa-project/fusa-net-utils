@@ -50,3 +50,6 @@ def test_logmel(mock_wav, n_mels, n_fft, expected_windows):
     assert logmel.shape[0] == 1
     assert logmel.shape[1] == n_mels
     assert logmel.shape[2] == expected_windows
+    # pobrar que no hay nans
+
+# Probar el processor, es decir que el wav se creo donde corresponde

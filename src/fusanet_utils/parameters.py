@@ -5,6 +5,9 @@ def default_params():
     params['features']['number_of_channels'] = 1
     params['features']['combine_channels'] = 'mean'
     params['features']['collate_resize'] = 'pad'
+    params['features']['waveform_normalization'] = {}
+    params['features']['waveform_normalization']['scope'] = 'local' 
+    params['features']['waveform_normalization']['type'] = 'zscore' 
     return params
 
 def default_logmel_parameters(): 

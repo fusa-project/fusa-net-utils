@@ -3,6 +3,7 @@ import csv
 import wave
 import json
 import numpy as np
+import torch
 from torch.utils.data import DataLoader, ConcatDataset
 
 from fusanet_utils.datasets.external import ESC, UrbanSound8K
@@ -68,8 +69,12 @@ def test_fusa_esc(mock_esc50):
                         batch_size=1,
                         collate_fn=my_collate)
     batch = next(iter(loader))
-    assert batch["mel_transform"].ndims == 4
+    assert batch["mel_transform"].ndim == 4
     assert batch["mel_transform"].shape[1] == 1
     assert batch["mel_transform"].shape[2] == 64
-    assert batch["mel_transform"].shape[3] == 16
+    assert batch["mel_transform"].shape[3] == 32
     assert dataset.label_int2string(batch['label'])[0] == "animal/dog"
+    assert torch.allclose(torch.mean(batch["waveform"]), torch.Tensor([0.0]), atol=1e-5)
+
+
+
