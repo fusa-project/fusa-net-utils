@@ -9,14 +9,12 @@ def rolling_zscore(dataset, params):
     for file_path, _ in dataset:
         waveform = get_waveform(file_path, params)
         mean += torch.sum(waveform)
-        n_samples += torch.numel(waveform)
-        print(torch.mean(waveform))
+        n_samples += torch.numel(waveform)        
     mean = mean/n_samples
 
     for file_path, _ in dataset:
         waveform = get_waveform(file_path, params)
         std += torch.sum((waveform - mean)**2)
-        print(torch.std(waveform))
     std = torch.sqrt(std/n_samples)
     return mean, std
 
