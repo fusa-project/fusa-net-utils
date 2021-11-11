@@ -11,6 +11,14 @@ from fusanet_utils.datasets.fusa import FUSA_dataset
 from fusanet_utils.transforms import Collate_and_transform
 from fusanet_utils.parameters import default_logmel_parameters
 
+def create_mock_audio(path, sampling_rate, audio):
+    audio = np.array([audio, audio]).T
+    audio = (audio * (2**15 - 1)).astype("<h")    
+    with wave.open(str(path), "wb") as f:
+        f.setnchannels(2)
+        f.setsampwidth(2)
+        f.setframerate(sampling_rate)
+        f.writeframes(audio.tobytes())
 
 @pytest.fixture(scope="session")
 def mock_esc50(tmp_path_factory):
@@ -37,18 +45,15 @@ def mock_esc50(tmp_path_factory):
         ])
         writer.writerow(
             ['1-100032-A-0.wav', '1', '0', 'dog', 'True', '100032', 'A'])
+        writer.writerow(
+            ['1-100032-A-1.wav', '1', '0', 'dog', 'True', '100032', 'A'])
 
     # Create mock  audio
     sampling_rate = 44100
-    t = np.linspace(0, 1, sampling_rate)
-    audio = 0.5 * np.sin(2 * np.pi * 440.0 * t)
-    audio = np.array([audio, audio]).T
-    audio = (audio * (2**15 - 1)).astype("<h")
-    with wave.open(str(audio_folder / "1-100032-A-0.wav"), "wb") as f:
-        f.setnchannels(2)
-        f.setsampwidth(2)
-        f.setframerate(sampling_rate)
-        f.writeframes(audio.tobytes())
+    time = np.linspace(0, 1, sampling_rate)
+    audio = 0.5 * np.sin(2 * np.pi * 440.0 * time)
+    create_mock_audio(audio_folder / "1-100032-A-0.wav", sampling_rate, audio)
+    create_mock_audio(audio_folder / "1-100032-A-1.wav", sampling_rate, 0.01*np.random.randn(len(audio))) 
 
     return datasets_path
 
@@ -74,7 +79,25 @@ def test_fusa_esc(mock_esc50):
     assert batch["mel_transform"].shape[2] == 64
     assert batch["mel_transform"].shape[3] == 32
     assert dataset.label_int2string(batch['label'])[0] == "animal/dog"
-    assert torch.allclose(torch.mean(batch["waveform"]), torch.Tensor([0.0]), atol=1e-5)
 
+def test_local_zscore_normalizer(mock_esc50):
+    params = default_logmel_parameters()
+    
+    dataset = FUSA_dataset(ConcatDataset([ESC(mock_esc50)]),
+                           feature_params=params["features"])
+    
+    for sample in dataset:
+        assert torch.allclose(torch.mean(sample['waveform']  ), torch.Tensor([0.0]), atol=1e-5)
+        assert torch.allclose(torch.std(sample['waveform']  ), torch.Tensor([1.0]), atol=1e-5)
+    
 
-
+def test_local_minmax_normalizer(mock_esc50):
+    params = default_logmel_parameters()
+    params['features']['waveform_normalization']['type'] = 'minmax' 
+    dataset = FUSA_dataset(ConcatDataset([ESC(mock_esc50)]),
+                           feature_params=params["features"])
+    
+    for sample in dataset:
+        assert torch.allclose(torch.min(sample['waveform']  ), torch.Tensor([0.0]), atol=1e-5)
+        assert torch.allclose(torch.max(sample['waveform']  ), torch.Tensor([1.0]), atol=1e-5)
+    

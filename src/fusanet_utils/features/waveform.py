@@ -27,16 +27,68 @@ def waveform_preprocessing(waveform: torch.Tensor, origin_sr: int, params: Dict)
     
     if 'waveform_normalization' in params:
         if params['waveform_normalization']['scope'] == 'local':
-            how_to = params['waveform_normalization']['type']
-            if how_to == 'zscore':
-                waveform = (waveform - torch.mean(waveform))/torch.std(waveform)
-            elif how_to == 'minmax':
-                wave_min = torch.min(waveform)
-                wave_max = torch.max(waveform)
-                waveform = (waveform - wave_min)/(wave_max - wave_min)
-            elif how_to == 'rms':
-                pass
-            elif how_to == 'peak':
-                pass
-
+            waveform = local_normalizer(waveform, params)   
     return waveform
+
+def zscore(waveform):
+    return torch.mean(waveform), torch.std(waveform)
+
+def minmax(waveform):
+    min = torch.min(waveform)
+    max = torch.max(waveform)
+    return min, max-min
+
+def local_normalizer(waveform, params):
+    how_to = params['waveform_normalization']['type']
+    if how_to == 'zscore':
+        center, scale = zscore(waveform)
+    elif how_to == 'minmax':
+        center, scale = minmax(waveform)
+    elif how_to == 'rms':
+        center, scale = 0, 1
+    elif how_to == 'peak':
+        center, scale = 0, 1
+    return (waveform - center)/scale  
+
+def rolling_zscore(dataset, params):
+    mean = 0.0
+    std = 0.0
+    n_samples = 0
+    for file_path, _ in dataset:
+        waveform = get_waveform(file_path, params)
+        mean += torch.sum(waveform)
+        n_samples += len(waveform)
+    mean = mean/n_samples
+
+    for file_path, _ in dataset:
+        waveform = get_waveform(file_path, params)
+        std += torch.sum((waveform - mean)**2)
+    std = torch.sqrt(std/n_samples)
+    return mean, std
+
+def rolling_minmax(dataset, params):
+    min = float('inf')
+    max = -float('inf')
+    for file_path, _ in dataset:
+        waveform = get_waveform(file_path, params)
+        local_min = torch.min(waveform)
+        local_max = torch.max(waveform)
+        if local_min < min:
+            min = local_min
+        if local_max > max:
+            max = local_max
+    return min, max-min
+
+class Global_normalizer():
+
+    def __init__(self, params, dataset):
+        
+        how_to = params['waveform_normalization']['type']
+        if how_to == 'zscore':
+            self.center, self.scale = rolling_zscore(dataset, params)
+        elif how_to == 'minmax':
+            self.center, self.scale = rolling_minmax(dataset, params)        
+
+    def __call__(self, waveform):
+        return (waveform - self.center)/self.scale
+        
