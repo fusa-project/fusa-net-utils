@@ -53,6 +53,7 @@ def mock_esc50(tmp_path_factory):
     time = np.linspace(0, 1, sampling_rate)
     audio = 0.5 * np.sin(2 * np.pi * 440.0 * time)
     create_mock_audio(audio_folder / "1-100032-A-0.wav", sampling_rate, audio)
+    np.random.seed(12345)
     create_mock_audio(audio_folder / "1-100032-A-1.wav", sampling_rate, 0.01*np.random.randn(len(audio))) 
 
     return datasets_path
@@ -100,4 +101,24 @@ def test_local_minmax_normalizer(mock_esc50):
     for sample in dataset:
         assert torch.allclose(torch.min(sample['waveform']  ), torch.Tensor([0.0]), atol=1e-5)
         assert torch.allclose(torch.max(sample['waveform']  ), torch.Tensor([1.0]), atol=1e-5)
+
+def test_global_zscore_normalizer(mock_esc50):
+    params = default_logmel_parameters()
+    params['features']['waveform_normalization']['scope'] = 'global' 
+    dataset = FUSA_dataset(ConcatDataset([ESC(mock_esc50)]),
+                           feature_params=params["features"])    
+    
+    assert torch.allclose(dataset.normalizer.center, torch.Tensor([0.0]), atol=1e-3)
+    assert torch.allclose(dataset.normalizer.scale, torch.Tensor([0.2499]), atol=1e-3)
+
+def test_global_minmax_normalizer(mock_esc50):
+    params = default_logmel_parameters()
+    params['features']['waveform_normalization']['scope'] = 'global' 
+    params['features']['waveform_normalization']['type'] = 'minmax' 
+    dataset = FUSA_dataset(ConcatDataset([ESC(mock_esc50)]),
+                           feature_params=params["features"])    
+    
+    assert torch.allclose(dataset.normalizer.center, torch.Tensor([-0.5]), atol=1e-3)
+    assert torch.allclose(dataset.normalizer.scale, torch.Tensor([1.0]), atol=1e-3)
+    
     

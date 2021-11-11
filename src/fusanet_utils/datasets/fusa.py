@@ -5,6 +5,7 @@ from torch.utils.data import Dataset, ConcatDataset
 
 from ..features.processor import FeatureProcessor
 from ..features.waveform import get_waveform
+from ..features.global_normalizer import Global_normalizer
 from .external import ESC, UrbanSound8K
 
 class FUSA_dataset(Dataset):
@@ -16,9 +17,12 @@ class FUSA_dataset(Dataset):
             self.categories += d.categories
         self.categories = sorted(list(set(self.categories)))
         self.le = LabelEncoder().fit(self.categories)
-
         self.waveform_transform = waveform_transform
         self.params = feature_params
+        # Precompute global normalizer stats
+        if 'waveform_normalization' in self.params:
+            if self.params['waveform_normalization']['scope'] == 'global':
+                self.normalizer = Global_normalizer(self.params, dataset)
         # Precompute features
         for file_path, _ in self.dataset:
             FeatureProcessor(self.params).write_features(file_path)            
@@ -26,6 +30,9 @@ class FUSA_dataset(Dataset):
     def __getitem__(self, idx: int) -> Dict:
         file_path, label = self.dataset[idx]
         waveform = get_waveform(file_path, self.params)
+        if 'waveform_normalization' in self.params:
+            if self.params['waveform_normalization']['scope'] == 'global':
+                waveform = self.normalizer(waveform)
         if self.waveform_transform is not None:
             waveform = self.waveform_transform(waveform)
         sample = {'waveform': waveform, 'label': torch.from_numpy(self.le.transform([label]))}
