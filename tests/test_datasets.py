@@ -108,8 +108,8 @@ def test_global_zscore_normalizer(mock_esc50):
     dataset = FUSA_dataset(ConcatDataset([ESC(mock_esc50)]),
                            feature_params=params["features"])    
     
-    assert torch.allclose(dataset.normalizer.center, torch.Tensor([0.0]), atol=1e-3)
-    assert torch.allclose(dataset.normalizer.scale, torch.Tensor([0.2499]), atol=1e-3)
+    assert torch.allclose(dataset.global_normalizer.center, torch.Tensor([0.0]), atol=1e-3)
+    assert torch.allclose(dataset.global_normalizer.scale, torch.Tensor([0.2499]), atol=1e-3)
 
 def test_global_minmax_normalizer(mock_esc50):
     params = default_logmel_parameters()
@@ -118,7 +118,7 @@ def test_global_minmax_normalizer(mock_esc50):
     dataset = FUSA_dataset(ConcatDataset([ESC(mock_esc50)]),
                            feature_params=params["features"])    
     
-    assert torch.allclose(dataset.normalizer.center, torch.Tensor([-0.5]), atol=1e-3)
-    assert torch.allclose(dataset.normalizer.scale, torch.Tensor([1.0]), atol=1e-3)
+    assert torch.allclose(dataset.global_normalizer.center, torch.Tensor([-0.5]), atol=1e-3)
+    assert torch.allclose(dataset.global_normalizer.scale, torch.Tensor([1.0]), atol=1e-3)
     
     

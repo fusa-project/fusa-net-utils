@@ -3,6 +3,7 @@ import torch
 import torchaudio
 
 from .base import Feature
+from .global_normalizer import Global_normalizer
 
 
 class LogMel(Feature):
@@ -22,8 +23,9 @@ class LogMel(Feature):
 
 
 class FeatureProcessor():
-    def __init__(self, params: Dict = {}):
+    def __init__(self, params: Dict = {}, normalizer: Global_normalizer = None):
         self.params = params
+        self.normalizer = normalizer
         self.processors = self.__find_processors()
 
     def __find_processors(self) -> Dict:
@@ -38,6 +40,10 @@ class FeatureProcessor():
         return processors
 
     def compute_features(self, waveform: torch.Tensor) -> Dict:
+        """
+        Used by torch-serve
+        TODO: PASS GLOBAL NORMALIZER TO TORCH SERVE
+        """
         sample = dict()
         for feature_name, processor in self.processors.items():
             sample[feature_name] = processor.compute(waveform)
@@ -45,7 +51,7 @@ class FeatureProcessor():
 
     def write_features(self, waveform_path: str) -> None:
         for processor in self.processors.values():
-            processor.write_to_disk(waveform_path)
+            processor.write_to_disk(waveform_path, self.normalizer)
 
     def read_features(self, waveform_path: str) -> Dict:
         sample = dict()

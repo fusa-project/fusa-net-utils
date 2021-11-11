@@ -26,10 +26,10 @@ class Feature(ABC):
         (pre_path / "features" / pos_path).mkdir(parents=True, exist_ok=True)
         return pre_path / "features" / pos_path / file_name
     
-    def write_to_disk(self, waveform_path: str) -> None:
+    def write_to_disk(self, waveform_path: str, global_normalizer = None) -> None:
         feature_path = self.create_path(pathlib.Path(waveform_path))
         if not feature_path.exists() or self.params["overwrite"]: 
-            waveform =  get_waveform(waveform_path, self.params)
+            waveform =  get_waveform(waveform_path, self.params, global_normalizer)
             feature = self.compute(waveform)
             torch.save(feature, feature_path)
 

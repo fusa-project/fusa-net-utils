@@ -2,11 +2,11 @@ from typing import Dict
 import torchaudio
 import torch
 
-def get_waveform(file_path: str, params: Dict) -> torch.Tensor:
+def get_waveform(file_path: str, params: Dict, global_normalizer=None) -> torch.Tensor:
     waveform, origin_sr = torchaudio.load(file_path)
-    return waveform_preprocessing(waveform, origin_sr, params)
+    return waveform_preprocessing(waveform, origin_sr, params, global_normalizer)
 
-def waveform_preprocessing(waveform: torch.Tensor, origin_sr: int, params: Dict) -> torch.Tensor:
+def waveform_preprocessing(waveform: torch.Tensor, origin_sr: int, params: Dict, global_normalizer=None) -> torch.Tensor:
     origin_ch = waveform.size()[0]
     target_sr = params["sampling_rate"]
     target_ch = params["number_of_channels"]
@@ -28,6 +28,8 @@ def waveform_preprocessing(waveform: torch.Tensor, origin_sr: int, params: Dict)
     if 'waveform_normalization' in params:
         if params['waveform_normalization']['scope'] == 'local':
             waveform = local_normalizer(waveform, params)   
+        elif params['waveform_normalization']['scope'] == 'global' and global_normalizer is not None:
+            waveform = global_normalizer(waveform)
     return waveform
 
 def zscore(waveform):

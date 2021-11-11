@@ -19,20 +19,19 @@ class FUSA_dataset(Dataset):
         self.le = LabelEncoder().fit(self.categories)
         self.waveform_transform = waveform_transform
         self.params = feature_params
+        #self.global_normalizer = None
         # Precompute global normalizer stats
         if 'waveform_normalization' in self.params:
             if self.params['waveform_normalization']['scope'] == 'global':
-                self.normalizer = Global_normalizer(self.params, dataset)
+                self.global_normalizer = Global_normalizer(self.params, dataset)
         # Precompute features
         for file_path, _ in self.dataset:
-            FeatureProcessor(self.params).write_features(file_path)            
+            FeatureProcessor(self.params, self.global_normalizer).write_features(file_path)            
 
     def __getitem__(self, idx: int) -> Dict:
         file_path, label = self.dataset[idx]
-        waveform = get_waveform(file_path, self.params)
-        if 'waveform_normalization' in self.params:
-            if self.params['waveform_normalization']['scope'] == 'global':
-                waveform = self.normalizer(waveform)
+        waveform = get_waveform(file_path, self.params, self.global_normalizer)
+        
         if self.waveform_transform is not None:
             waveform = self.waveform_transform(waveform)
         sample = {'waveform': waveform, 'label': torch.from_numpy(self.le.transform([label]))}
