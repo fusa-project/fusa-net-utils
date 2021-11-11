@@ -18,8 +18,11 @@ class Feature(ABC):
     def create_path(self, waveform_path: pathlib.Path) -> pathlib.Path:
         feature_name = type(self).__name__
         file_name = waveform_path.stem + "_" + feature_name + ".pt"
-        pre_path = pathlib.Path(*waveform_path.parts[:-4])
-        pos_path = pathlib.Path(*waveform_path.parts[-3:-1])
+        for k, part in enumerate(waveform_path.parts[::-1]):
+            if part == 'datasets':
+                break
+        pre_path = pathlib.Path(*waveform_path.parts[:-(k+1)])
+        pos_path = pathlib.Path(*waveform_path.parts[-k:-1])
         (pre_path / "features" / pos_path).mkdir(parents=True, exist_ok=True)
         return pre_path / "features" / pos_path / file_name
     
