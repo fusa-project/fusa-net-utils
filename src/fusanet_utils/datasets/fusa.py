@@ -19,7 +19,7 @@ class FUSA_dataset(Dataset):
         self.le = LabelEncoder().fit(self.categories)
         self.waveform_transform = waveform_transform
         self.params = feature_params
-        #self.global_normalizer = None
+        self.global_normalizer = None
         # Precompute global normalizer stats
         if 'waveform_normalization' in self.params:
             if self.params['waveform_normalization']['scope'] == 'global':
