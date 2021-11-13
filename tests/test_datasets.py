@@ -107,7 +107,8 @@ def test_fusa_esc_collate_pad(mock_esc50):
                         batch_size=2,
                         collate_fn=my_collate)
     batch = next(iter(loader))
-    assert batch["mel_transform"].shape == torch.Size([2, 1, 64, 32])
+    # batches are padded to match longest sample
+    assert batch["mel_transform"].shape[-1] == max([sample["mel_transform"].shape[-1] for sample in dataset])
 
 def test_fusa_esc_collate_crop(mock_esc50):
     params = default_logmel_parameters()
@@ -120,7 +121,8 @@ def test_fusa_esc_collate_crop(mock_esc50):
                         batch_size=2,
                         collate_fn=my_collate)
     batch = next(iter(loader))
-    assert batch["mel_transform"].shape == torch.Size([2, 1, 64, 16])
+    # batches are cropped to match shortest sample
+    assert batch["mel_transform"].shape[-1] == min([sample["mel_transform"].shape[-1] for sample in dataset])
 
 
 def test_local_zscore_normalizer(mock_esc50):
