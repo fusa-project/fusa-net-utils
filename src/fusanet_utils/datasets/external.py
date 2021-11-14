@@ -69,7 +69,7 @@ class UrbanSound8K(ExternalDataset):
         for label in df["class"].unique():
             if label in label_transforms:
                 self.categories += [label_transforms[label]]
-                mask = (df["class"] == label) & (df["end"] - df["start"] >= 0.5)
+                mask = (df["class"] == label) & (df["end"] - df["start"] >= 0.7)
                 self.file_list += list(df["slice_file_name"].loc[mask])
                 self.fold_list += list(df["fold"].loc[mask])
                 self.labels += [label_transforms[label]]*sum(mask)
