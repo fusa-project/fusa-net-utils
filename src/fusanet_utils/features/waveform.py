@@ -1,8 +1,12 @@
+import logging
 from typing import Dict
 import torchaudio
 import torch
 
+logger = logging.getLogger(__name__)
+
 def get_waveform(file_path: str, params: Dict, global_normalizer=None) -> torch.Tensor:
+    logger.debug(f"Loading: {file_path}")
     waveform, origin_sr = torchaudio.load(file_path)
     return waveform_preprocessing(waveform, origin_sr, params, global_normalizer)
 
@@ -11,7 +15,9 @@ def waveform_preprocessing(waveform: torch.Tensor, origin_sr: int, params: Dict,
     target_sr = params["sampling_rate"]
     target_ch = params["number_of_channels"]
     if not origin_sr == target_sr:
+        logger.debug(f"Original shape: {waveform.shape} and sampling rate {origin_sr}")
         waveform = torchaudio.transforms.Resample(origin_sr, target_sr)(waveform)
+        logger.debug(f"Resampled shape: {waveform.shape} and sampling rate {target_sr}")
     # TODO: Separar las pistas como audios independientes (duplicar a nivel de dataset)
     if target_ch == 1 and origin_ch == 2:
         how_to = params['combine_channels']

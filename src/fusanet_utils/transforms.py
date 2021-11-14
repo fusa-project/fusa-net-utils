@@ -1,7 +1,10 @@
+import logging
 import torch
 from torch import Tensor
 from torch.nn.functional import pad
 from typing import Dict, List
+
+logger = logging.getLogger(__name__)
 
 def resize(data, target_length):
     if data.size(-1) < target_length:
@@ -33,9 +36,10 @@ class Collate_and_transform:
                     target_length = max(lens)
                 elif self.resizer == 'crop':
                     target_length = min(lens)
+                logger.debug(f"{self.resizer} {target_length} {lens}")             
                 for sample in batch:
                     sample[key] = resize(sample[key], target_length)
-            
+        
         # Data augmentation transforms
         transformed_batch = []
         for sample in batch:
