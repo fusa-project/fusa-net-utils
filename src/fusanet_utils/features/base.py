@@ -1,9 +1,13 @@
+import logging
 from abc import ABC, abstractmethod
 from os.path import isfile, splitext
 import pathlib
 import torch
 
 from .waveform import get_waveform
+
+logger = logging.getLogger(__name__)
+
 
 class Feature(ABC):
     
@@ -29,6 +33,7 @@ class Feature(ABC):
     def write_to_disk(self, waveform_path: str, global_normalizer = None) -> None:
         feature_path = self.create_path(pathlib.Path(waveform_path))
         if not feature_path.exists() or self.params["overwrite"]: 
+            logger.debug(f"Writing features for {waveform_path}")
             waveform =  get_waveform(waveform_path, self.params, global_normalizer)
             feature = self.compute(waveform)
             torch.save(feature, feature_path)

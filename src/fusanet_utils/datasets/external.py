@@ -1,8 +1,10 @@
 from os.path import join, isfile
-import warnings
+import logging
 from typing import Tuple, Dict
 import pandas as pd
 from torch.utils.data import Dataset
+
+logger = logging.getLogger(__name__)
 
 def get_label_transforms(repo_path: str, dataset_name: str) -> Dict:
     taxonomy_path = join(repo_path, "fusa_taxonomy.json")   
@@ -32,13 +34,13 @@ class ESC(ExternalDataset):
         ESC_classes = df["category"].unique()
         # Verify that there are no typos in FUSA_taxonomy
         if not all([key in set(ESC_classes) for key in label_transforms.keys() if key != ""]):
-            warnings.warn("Existen llaves de ESC que no calzan en fusa_taxonomy.json", UserWarning)
+            logger.warning("Existen llaves de ESC que no calzan en fusa_taxonomy.json")
         
         self.audio_path = join(datasets_path, "ESC-50", "audio")
         # Verify that files exist
         file_exist = df["filename"].apply(lambda x: isfile(join(datasets_path, "ESC-50", "audio", x)))
         if not file_exist.all():
-            warnings.warn("Existen rutas incorrectas o archivos perdidos", UserWarning)
+            logger.warning("Existen rutas incorrectas o archivos perdidos")
             df = df.loc[file_exist]
         
         self.file_list, self.labels, self.categories = [], [], []

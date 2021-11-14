@@ -1,6 +1,8 @@
+import logging
 import torch
 from .waveform import get_waveform
 
+logger = logging.getLogger(__name__)
 
 def rolling_zscore(dataset, params):
     mean = 0.0
@@ -36,6 +38,7 @@ class Global_normalizer():
     def __init__(self, params, dataset):
         
         how_to = params['waveform_normalization']['type']
+        logger.info("Computing stats for global normalization")                
         if how_to == 'zscore':
             self.center, self.scale = rolling_zscore(dataset, params)
         elif how_to == 'minmax':
