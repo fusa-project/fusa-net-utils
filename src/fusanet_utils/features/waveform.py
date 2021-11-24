@@ -58,5 +58,7 @@ def local_normalizer(waveform, params):
         center, scale = 0, 1
     elif how_to == 'peak':
         center, scale = 0, 1
+    else:
+        center, scale = 0, 1
     return (waveform - center)/scale  
         

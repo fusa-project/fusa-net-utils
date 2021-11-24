@@ -182,3 +182,30 @@ def test_global_minmax_normalizer(mock_esc50):
     assert torch.allclose(dataset.global_normalizer.scale,
                           torch.Tensor([1.0]),
                           atol=1e-3)
+
+
+def test_no_normalizer(mock_esc50):
+    params = default_logmel_parameters()
+    #params['features']['waveform_normalization']['scope'] = None
+    #params['features']['waveform_normalization']['type'] = 'none'
+    params['features'].pop('waveform_normalization')
+    dataset = FUSA_dataset(ConcatDataset([ESC(mock_esc50)]),
+                           feature_params=params["features"])
+    sine_wave = dataset[0]['waveform']
+    assert torch.allclose(torch.min(sine_wave),
+                          torch.Tensor([-0.5]),
+                          atol=1e-3)
+    assert torch.allclose(torch.max(sine_wave),
+                          torch.Tensor([0.5]),
+                          atol=1e-3)
+    params = default_logmel_parameters()
+    params['features']['waveform_normalization']['scope'] = 'none'
+    dataset = FUSA_dataset(ConcatDataset([ESC(mock_esc50)]),
+                           feature_params=params["features"])
+    sine_wave = dataset[0]['waveform']
+    assert torch.allclose(torch.min(sine_wave),
+                          torch.Tensor([-0.5]),
+                          atol=1e-3)
+    assert torch.allclose(torch.max(sine_wave),
+                          torch.Tensor([0.5]),
+                          atol=1e-3)
