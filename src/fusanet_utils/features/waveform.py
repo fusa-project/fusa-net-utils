@@ -1,13 +1,28 @@
+import io
 import logging
-from typing import Dict
+import pathlib
+from typing import Dict, Union
+import numpy as np
 import torchaudio
 import torch
+from pydub import AudioSegment
 
 logger = logging.getLogger(__name__)
 
-def get_waveform(file_path: str, params: Dict, global_normalizer=None) -> torch.Tensor:
-    logger.debug(f"Loading: {file_path}")
-    waveform, origin_sr = torchaudio.load(file_path)
+def get_waveform(file: Union[str, pathlib.Path, bytes], params: Dict, global_normalizer=None) -> torch.Tensor:
+    if type(file) == str or type(file) == pathlib.PosixPath :
+        logger.debug(f"Loading: {file}")
+        asegment = AudioSegment.from_file(file)
+    elif type(file) == bytes:
+        asegment = AudioSegment.from_file(io.BytesIO(file))
+    origin_sr = asegment.frame_rate
+    channel_sounds = asegment.split_to_mono()
+    samples = [s.get_array_of_samples() for s in channel_sounds]
+    # Convert to float32
+    fp_arr = np.array(samples).T.astype(np.float32)
+    fp_arr /= np.iinfo(samples[0].typecode).max
+    # Convert to tensor
+    waveform = torch.from_numpy(fp_arr).T    
     return waveform_preprocessing(waveform, origin_sr, params, global_normalizer)
 
 def waveform_preprocessing(waveform: torch.Tensor, origin_sr: int, params: Dict, global_normalizer=None) -> torch.Tensor:
