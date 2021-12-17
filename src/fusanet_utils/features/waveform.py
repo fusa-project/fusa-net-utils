@@ -13,7 +13,7 @@ def get_waveform(file: Union[str, pathlib.Path, bytes], params: Dict, global_nor
     if type(file) == str or type(file) == pathlib.PosixPath :
         logger.debug(f"Loading: {file}")
         asegment = AudioSegment.from_file(file)
-    elif type(file) == bytes:
+    elif type(file) == bytes or  type(file) == bytearray:
         asegment = AudioSegment.from_file(io.BytesIO(file))
     origin_sr = asegment.frame_rate
     channel_sounds = asegment.split_to_mono()
