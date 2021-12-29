@@ -23,7 +23,9 @@ def create_mock_audio(path, sampling_rate, audio):
 
 @pytest.fixture(scope="session")
 def mock_folder(tmp_path_factory):
-    audio_folder = tmp_path_factory.mktemp("test_folder")
+    datasets_path = tmp_path_factory.mktemp("datasets")
+    audio_folder = datasets_path / "datasets" / "test_folder"
+    audio_folder.mkdir(parents=True)
     sampling_rate = 44100
     time = np.linspace(0, 1, sampling_rate)
     audio = 0.5 * np.sin(2 * np.pi * 440.0 * time)
