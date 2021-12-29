@@ -36,10 +36,25 @@ def mock_folder(tmp_path_factory):
 
 def test_folder_dataset(mock_folder):
     dataset = FolderDataset(mock_folder)
-    #assert len(dataset.categories) == 1
-    #assert dataset.categories == ['animal/dog', 'human/others']
+    assert len(dataset.categories) == 1
+    assert dataset.categories == ['dummy']
     assert len(dataset) == 2
-    #assert dataset.labels[0] == 'animal/dog'
+
+def test_fusa_mock(mock_folder):
+    params = default_logmel_parameters()
+    dataset = FUSA_dataset(ConcatDataset([FolderDataset(mock_folder)]),
+                           feature_params=params["features"])
+    assert len(dataset) == 2
+    assert 'label' in dataset[0]
+    assert dataset.label_int2string(dataset[0]['label'])[0] == "dummy"
+    assert 'waveform' in dataset[0]
+    assert 'mel_transform' in dataset[0]
+    assert 'waveform' in dataset[1]
+    assert 'mel_transform' in dataset[1]
+    assert dataset[0]["waveform"].shape == torch.Size([1, 8000])
+    assert dataset[1]["waveform"].shape == torch.Size([1, 4000])
+    assert dataset[0]["mel_transform"].shape == torch.Size([1, 64, 32])
+    assert dataset[1]["mel_transform"].shape == torch.Size([1, 64, 16])
 
 @pytest.fixture(scope="session")
 def mock_esc50(tmp_path_factory):
