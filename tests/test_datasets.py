@@ -6,7 +6,7 @@ import numpy as np
 import torch
 from torch.utils.data import DataLoader, ConcatDataset
 
-from fusanet_utils.datasets.external import ESC, UrbanSound8K
+from fusanet_utils.datasets.external import ESC, UrbanSound8K, FolderDataset
 from fusanet_utils.datasets.fusa import FUSA_dataset
 from fusanet_utils.transforms import Collate_and_transform
 from fusanet_utils.parameters import default_logmel_parameters
@@ -21,6 +21,25 @@ def create_mock_audio(path, sampling_rate, audio):
         f.setframerate(sampling_rate)
         f.writeframes(audio.tobytes())
 
+@pytest.fixture(scope="session")
+def mock_folder(tmp_path_factory):
+    audio_folder = tmp_path_factory.mktemp("test_folder")
+    sampling_rate = 44100
+    time = np.linspace(0, 1, sampling_rate)
+    audio = 0.5 * np.sin(2 * np.pi * 440.0 * time)
+    create_mock_audio(audio_folder / "1-100032-A-0.wav", sampling_rate, audio)
+    np.random.seed(12345)
+    create_mock_audio(audio_folder / "1-100032-A-1.wav", sampling_rate,
+                      0.01 * np.random.randn(sampling_rate // 2))
+
+    return audio_folder
+
+def test_folder_dataset(mock_folder):
+    dataset = FolderDataset(mock_folder)
+    #assert len(dataset.categories) == 1
+    #assert dataset.categories == ['animal/dog', 'human/others']
+    assert len(dataset) == 2
+    #assert dataset.labels[0] == 'animal/dog'
 
 @pytest.fixture(scope="session")
 def mock_esc50(tmp_path_factory):

@@ -1,3 +1,4 @@
+from os import listdir
 from os.path import join, isfile
 import logging
 from typing import Tuple, Dict
@@ -22,6 +23,22 @@ class ExternalDataset(Dataset):
         
     def __len__(self) -> int:        
         return len(self.file_list)
+
+class FolderDataset(ExternalDataset):
+
+    def __init__(self, folder_path: str):
+        """
+        Expects a folder with audio files
+        """
+        self.audio_path = folder_path
+        self.file_list = sorted(listdir(self.audio_path))
+        self.labels = ['dummy']*len(self.file_list)
+        self.categories = ['dummy']
+
+    def _file_path(self, idx: int) -> str:
+        return join(self.audio_path, self.file_list[idx])
+
+
 
 class ESC(ExternalDataset):
 
