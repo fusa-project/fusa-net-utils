@@ -29,6 +29,7 @@ class Collate_and_transform:
     def __call__(self, batch: List[Dict]) -> Tensor:
         data_keys = list(batch[0].keys())
         data_keys.remove('label')
+        data_keys.remove('filename')
         for key in data_keys:
             if not self.resizer == 'none':
                 lens = [sample[key].size(-1) for sample in batch]  
@@ -48,6 +49,7 @@ class Collate_and_transform:
             transformed_batch.append(sample)
         mbatch = {}
         mbatch['label'] = torch.LongTensor([sample['label'] for sample in transformed_batch])
+        mbatch['filename'] = [sample['filename'] for sample in transformed_batch]
         for key in data_keys:
             mbatch[key] =  torch.stack([sample[key] for sample in transformed_batch], dim=0)
         return mbatch

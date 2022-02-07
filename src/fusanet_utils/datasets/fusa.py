@@ -1,4 +1,5 @@
 from typing import Dict, List
+import pathlib
 from sklearn.preprocessing import LabelEncoder
 import torch
 from torch.utils.data import Dataset, ConcatDataset
@@ -34,7 +35,7 @@ class FUSA_dataset(Dataset):
         
         if self.waveform_transform is not None:
             waveform = self.waveform_transform(waveform)
-        sample = {'waveform': waveform, 'label': torch.from_numpy(self.le.transform([label]))}
+        sample = {'filename': pathlib.Path(file_path).stem, 'waveform': waveform, 'label': torch.from_numpy(self.le.transform([label]))}
         sample.update(FeatureProcessor(self.params).read_features(file_path))             
         return sample
 
