@@ -1,5 +1,6 @@
 from os import listdir
 from os.path import join, isfile
+from pathlib import Path
 import logging
 from typing import Tuple, Dict
 import pandas as pd
@@ -64,7 +65,7 @@ class ESC(ExternalDataset):
         for label in ESC_classes:
             if label in label_transforms:
                 self.categories += [label_transforms[label]]
-                mask = df.category == label
+                mask = df["category"] == label
                 self.file_list += list(df["filename"].loc[mask])
                 self.labels += [label_transforms[label]]*sum(mask)
 
@@ -95,3 +96,37 @@ class UrbanSound8K(ExternalDataset):
 
     def _file_path(self, idx: int) -> str:
         return join(self.audio_path, self.fold_list[idx], self.file_list[idx])
+
+class VitGlobal(ExternalDataset):
+    
+    def __init__(self, repo_path: str):
+        label_transforms = get_label_transforms(repo_path, "Vitglobal")
+        datasets_path = join(repo_path, "datasets")
+        df = pd.read_csv(join(datasets_path, "VitGlobal", "meta", "audios_eruido2022_20220121.csv"))
+        self.audio_path = join(datasets_path, "VitGlobal", "audio", "dataset")
+
+        classes = df["WAVE_MEMO"].unique()
+        # Verify that there are no typos in FUSA_taxonomy
+        if not all([key in set(classes) for key in label_transforms.keys() if key != ""]):
+            logger.warning("Existen llaves de ESC que no calzan en fusa_taxonomy.json")
+        
+        self.audio_path = Path(datasets_path) / "VitGlobal" / "audio" / "dataset"
+        # Verify that files exist
+        #import ipdb; ipdb.set_trace()
+        file_names = df["WAVE_URL"].apply(lambda x: Path(x).stem +'.mp3')
+        file_exist = file_names.apply(lambda x: (self.audio_path / Path(x)).exists())
+        if not file_exist.all():
+            logger.warning("Existen rutas incorrectas o archivos perdidos en la metadata")
+            df = df.loc[file_exist]
+        file_names = file_names[file_exist]
+
+        self.file_list, self.labels, self.categories = [], [], []
+        for label in classes:
+            if label in label_transforms:
+                self.categories += [label_transforms[label]]
+                mask = df["WAVE_MEMO"] == label
+                self.file_list += list(file_names.loc[mask])
+                self.labels += [label_transforms[label]]*sum(mask)
+
+    def _file_path(self, idx: int) -> str:
+        return join(self.audio_path, self.file_list[idx])
