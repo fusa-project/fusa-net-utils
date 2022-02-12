@@ -62,7 +62,7 @@ def create_dataloaders(dataset, params: Dict):
     valid_loader = DataLoader(valid_subset, batch_size=8, collate_fn=my_collate, num_workers=4, pin_memory=True)
     return train_loader, valid_loader
 
-def train(loaders: Tuple, params: Dict, model_path: str, cuda: bool, criterion=torch.nn.CrossEntropyLoss()) -> None:
+def train(loaders: Tuple, params: Dict, model_path: str, cuda: bool) -> None:
     """
     Make more abstract to other models
     """
@@ -72,6 +72,9 @@ def train(loaders: Tuple, params: Dict, model_path: str, cuda: bool, criterion=t
     n_train, n_valid = len(train_loader.dataset), len(valid_loader.dataset)    
     model = torch.load(model_path)
     #criterion = torch.nn.BCELoss()
+    # TODO: Add param to select BCE/CrossEntropyLoss
+    # TODO: Clean this function
+    criterion=torch.nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=params['train']['learning_rate'])
 
     if cuda and torch.cuda.device_count() > 0:
@@ -98,7 +101,6 @@ def train(loaders: Tuple, params: Dict, model_path: str, cuda: bool, criterion=t
                     continue
                 marshalled_batch[key] = batch[key].to(device, non_blocking=True)
             optimizer.zero_grad()
-            #y = model.forward(marshalled_batch['waveform'])['clipwise_output']
             y = model.forward(marshalled_batch)
             loss = criterion(y, marshalled_batch['label'])
             loss.backward()
