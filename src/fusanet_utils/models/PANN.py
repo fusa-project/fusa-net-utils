@@ -172,8 +172,7 @@ class Wavegram_Logmel_Cnn14(nn.Module):
         init_layer(self.fc_audioset)
  
     def forward(self, input, mixup_lambda=None):
-        """
-        Input: (batch_size, data_length)"""
+        input = input["waveform"]
         input = torch.squeeze(input, 1)
         logger.debug(f"{input.shape}") 
 
@@ -257,7 +256,7 @@ class Wavegram_Logmel_Cnn14(nn.Module):
             'embedding': embedding
             }
 
-        return output_dict
+        return self.fc_audioset(x)
         
     def create_trace(self, path='traced_model.pt'):
         dummy_example = torch.randn(1, 1, 160000)
