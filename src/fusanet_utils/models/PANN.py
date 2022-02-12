@@ -259,6 +259,6 @@ class Wavegram_Logmel_Cnn14(nn.Module):
         return self.fc_audioset(x)
         
     def create_trace(self, path='traced_model.pt'):
-        dummy_example = torch.randn(1, 1, 160000)
+        dummy_example = {'waveform': torch.randn(1, 1, 160000)}
         traced_model = torch.jit.trace(self, (dummy_example), strict=False)
         traced_model.save(path)
