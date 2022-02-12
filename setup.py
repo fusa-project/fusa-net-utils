@@ -25,7 +25,7 @@ setup(
     package_dir={'': 'src'},
     packages=find_packages(where='src'),
     python_requires='>=3.6, <4',
-    install_requires=['numpy', 'pandas', 'torch', 'torchaudio', 'scikit-learn', 'pydub'],
+    install_requires=['numpy', 'pandas', 'torch', 'torchaudio', 'scikit-learn', 'pydub', 'soundfile', 'torchlibrosa'],
     project_urls={  # Optional
         'Bug Reports': 'https://github.com/fusa-project/fusa-net-utils',
         'Source': 'https://github.com/fusa-project/fusa-net-utils',
