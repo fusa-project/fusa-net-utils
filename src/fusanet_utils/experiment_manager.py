@@ -41,12 +41,12 @@ def initialize_model(model_path: str, params: Dict, n_classes: int, cuda: bool, 
         model.fc_audioset = torch.nn.Linear(2048, n_classes)
     torch.save(model, model_path)
 
-def create_dataset(root_path, params: Dict):
-    if  params['train']['dataset'] == 'ESC':
+def create_dataset(root_path, params: Dict, stage: str='train'):
+    if  params[stage]['dataset'] == 'ESC':
         train_dataset = [ESC(root_path)]
-    elif  params['train']['dataset'] == 'US':
+    elif  params[stage]['dataset'] == 'US':
         train_dataset = [UrbanSound8K(root_path)]
-    elif params['train']['dataset'] == 'VitGlobal':
+    elif params[stage]['dataset'] == 'VitGlobal':
         train_dataset = [VitGlobal(root_path)]
     else:
         train_dataset = [ESC(root_path), UrbanSound8K(root_path)]
@@ -153,6 +153,7 @@ def train(loaders: Tuple, params: Dict, model_path: str, cuda: bool) -> None:
 
 def evaluate_model(dataset, params: Dict, model_path: str, label_dictionary: Dict) -> None:
     model = torch.load(model_path)
+    model.cpu()
     model.eval()
     names, predictions, labels = [], [], []
     preds_str, label_str = [], []
