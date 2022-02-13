@@ -1,12 +1,14 @@
 from typing import Dict, Tuple
 import logging
+import time
+
 import numpy as np
 import torch
 from torch.utils.data import DataLoader, random_split, ConcatDataset
 from sklearn.metrics import classification_report, f1_score
 from dvclive import Live
 import pandas as pd
-import time
+from tqdm import tqdm
 
 from .transforms import Collate_and_transform
 from .datasets.external import ESC, UrbanSound8K, VitGlobal
@@ -161,7 +163,7 @@ def evaluate_model(dataset, params: Dict, model_path: str, label_dictionary: Dic
     my_collate = Collate_and_transform(params['features'])
     loader = DataLoader(dataset, batch_size=8, collate_fn=my_collate, num_workers=4, pin_memory=True)
     with torch.no_grad():
-        for batch in loader:
+        for batch in tqdm(loader):
             names.append(batch['filename'])
             predictions.append(model.forward(batch).argmax(dim=1).numpy())
             labels.append(batch['label'].numpy())
