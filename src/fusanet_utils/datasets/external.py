@@ -2,23 +2,33 @@ from pathlib import Path
 import logging
 from typing import Tuple, Dict, Union
 import pandas as pd
-from torch.utils.data import Dataset, ConcatDataset
+from torch.utils.data import Dataset
 from abc import abstractmethod
 
 logger = logging.getLogger(__name__)
 
+def get_label_transforms(repo_path: Union[Path, str], dataset_name: str) -> Dict:
+    if isinstance(repo_path, str):
+        repo_path = Path(repo_path)
+    inverse_transforms = pd.read_json(repo_path / "fusa_taxonomy.json").T[dataset_name].to_dict()
+    transforms = {}
+    for key, values in inverse_transforms.items():
+        for value in values:
+            transforms[value] = key
+    return transforms
+
 class FolderDataset(Dataset):
 
-    def __init__(self, folder_path: Union[str, Path], dataset_name: str=None):
+    def __init__(self, folder_path: Union[str, Path], label_transforms: Dict=None, allowed_extensions = ['.wav', '.mp3', '.m4a', '.ogg']):
         """
         Expects a path having subfolders containing audio files from the same class. 
         The label is taken from the subfolder's name
         """
         if isinstance(folder_path, str):
             folder_path = Path(folder_path)        
-        self.file_list = [f for f in folder_path.rglob("*") if f.is_file()]
-        if dataset_name is not None:
-            label_transforms = self.get_label_transforms(dataset_name)
+        self.file_list = [f for f in folder_path.rglob("*") if f.is_file() and f.suffix in allowed_extensions]
+        if label_transforms is not None:
+            # This assummes that all keys are in transforms
             self.labels = [label_transforms[f.parent.stem] for f in self.file_list]
         else:
             self.labels = [f.parent.stem for f in self.file_list]
@@ -32,49 +42,35 @@ class FolderDataset(Dataset):
 
 class DatasetWithCSVMetadata(Dataset):
 
-    def __init__(self, repo_path: Union[str, Path], dataset_name: str, audio_rel_path: Path, metadata_rel_path: Path):
+    def __init__(self, repo_path: Union[str, Path], audio_rel_path: Path, metadata_rel_path: Path, label_transforms: Dict=None):
         if isinstance(repo_path, str):
             repo_path = Path(repo_path)
         self.repo_path = repo_path
-        # TODO: Abstract parts of init
         datasets_path = repo_path / "datasets"
         self.audio_prefix_path = datasets_path / audio_rel_path
         file_paths, labels = self.parse_metadata(datasets_path / metadata_rel_path)
-        classes = labels.unique()
-        label_transforms = self.get_label_transforms(dataset_name)
-        # Verify that there are no typos in FUSA_taxonomy
-        if not all([key in set(classes) for key in label_transforms.keys() if key != ""]):
-            logger.warning(f"Existen llaves de {dataset_name} que no calzan en fusa_taxonomy.json")
-        
-        # Verify that all files exist
-        file_exist = file_paths.apply(lambda file: file.exists())
-        if not file_exist.all():
+        file_exists = file_paths.apply(lambda file: file.exists())
+        if not file_exists.all():
             logger.warning("Existen rutas incorrectas o archivos perdidos")
-            file_paths = file_paths.loc[file_exist]
-            labels = labels.loc[file_exist]
+            file_paths = file_paths.loc[file_exists]
+            labels = labels.loc[file_exists]
         
-        self.file_list, self.labels, self.categories = [], [], []
-        for label in classes:
-            if label in label_transforms:
-                self.categories += [label_transforms[label]]
-                mask = labels == label
-                self.file_list += list(file_paths.loc[mask])
-                self.labels += [label_transforms[label]]*sum(mask)
-
-    
-    def get_label_transforms(self, dataset_name: str) -> Dict:
-        taxonomy_path = self.repo_path / "fusa_taxonomy.json"
-        a = pd.read_json(taxonomy_path).T[dataset_name].to_dict()
-        transforms = {}
-        for key, values in a.items():
-            for value in values:
-                transforms[value] = key
-        return transforms
+        if label_transforms is not None:
+            # Verify that there are no typos in FUSA_taxonomy
+            if not all([key in set(labels.unique()) for key in label_transforms.keys() if key != ""]):
+                logger.warning(f"{self.__class__}: Existen llaves que no calzan en fusa_taxonomy.json")
+            label_exists = labels.apply(lambda label: label in label_transforms)
+            file_paths = file_paths.loc[label_exists]
+            labels = labels.loc[label_exists].apply(lambda label: label_transforms[label])
+        
+        self.file_list = file_paths.tolist()
+        self.labels = labels.tolist()    
+        self.categories = sorted(list(set(self.labels)))
 
     @abstractmethod
-    def parse_metadata(self, metadata_path: Path) -> Tuple:
+    def parse_metadata(self, metadata_path: Path) -> Tuple[pd.Series, pd.Series]:
         """
-        Returns a tuple of a series with the paths and a series with the labels
+        Returns a tuple of series with the paths and labels
         """
         pass
 
@@ -88,7 +84,8 @@ class DatasetWithCSVMetadata(Dataset):
 class ESC(DatasetWithCSVMetadata):
 
     def __init__(self, repo_path: Union[str, Path]):
-        super().__init__(repo_path, dataset_name="ESC", audio_rel_path=Path("ESC-50") / "audio", metadata_rel_path=Path("ESC-50") / "meta" / "esc50.csv")
+        label_transforms = get_label_transforms(repo_path, "ESC")
+        super().__init__(repo_path, audio_rel_path=Path("ESC-50") / "audio", metadata_rel_path=Path("ESC-50") / "meta" / "esc50.csv", label_transforms=label_transforms)
 
     def parse_metadata(self, metadata_path: Path) -> Tuple:
         df = pd.read_csv(metadata_path)
@@ -100,7 +97,8 @@ class ESC(DatasetWithCSVMetadata):
 class UrbanSound8K(DatasetWithCSVMetadata):
 
     def __init__(self, repo_path: Union[str, Path]):
-        super().__init__(repo_path, dataset_name="UrbanSound", audio_rel_path=Path("UrbanSound8K") / "audio", metadata_rel_path=Path("UrbanSound8K") / "metadata" / "UrbanSound8K.csv")
+        label_transforms = get_label_transforms(repo_path, "UrbanSound")
+        super().__init__(repo_path, audio_rel_path=Path("UrbanSound8K") / "audio", metadata_rel_path=Path("UrbanSound8K") / "metadata" / "UrbanSound8K.csv", label_transforms=label_transforms)
 
     def parse_metadata(self, metadata_path: Path) -> Tuple:
         df = pd.read_csv(metadata_path)
@@ -115,7 +113,8 @@ class UrbanSound8K(DatasetWithCSVMetadata):
 class VitGlobal(DatasetWithCSVMetadata):
 
     def __init__(self, repo_path: Union[str, Path]):
-        super().__init__(repo_path, dataset_name="Vitglobal", audio_rel_path=Path("VitGlobal") / "audio" / "dataset", metadata_rel_path=Path("VitGlobal") / "meta" / "audios_eruido2022_20220121.csv")
+        label_transforms = get_label_transforms(repo_path, "Vitglobal")
+        super().__init__(repo_path, audio_rel_path=Path("VitGlobal") / "audio" / "dataset", metadata_rel_path=Path("VitGlobal") / "meta" / "audios_eruido2022_20220121.csv", label_transforms=label_transforms)
 
     def parse_metadata(self, metadata_path: Path) -> Tuple:
         df = pd.read_csv(metadata_path)
@@ -128,7 +127,7 @@ class VitGlobal(DatasetWithCSVMetadata):
 class MMA(DatasetWithCSVMetadata):
 
     def __init__(self, repo_path: Union[str, Path]):
-        super().__init__(repo_path, dataset_name="Vitglobal", audio_rel_path=Path("VitGlobal") / "audio" / "dataset", metadata_rel_path=Path("VitGlobal") / "meta" / "audios_eruido2022_20220121.csv")
+        super().__init__(repo_path, dataset_name="MMA", audio_rel_path=Path("MMA") / "Etiquetado 2" / "00629", metadata_rel_path=Path("MMA") / "Etiquetado 2" / "Autopista Central (00629) project-13-at-2022-02-04-17-40-cbaf7e83.csv")
 
     def parse_metadata(self, metadata_path: Path) -> Tuple:
         df = pd.read_csv(metadata_path)
