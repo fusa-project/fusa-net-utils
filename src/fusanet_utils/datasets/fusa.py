@@ -21,6 +21,9 @@ class FUSA_dataset(Dataset):
         self.waveform_transform = waveform_transform
         self.params = feature_params
         self.global_normalizer = None
+        # Precompute waveforms 
+        for file_path, _ in self.dataset:
+            pass
         # Precompute global normalizer stats
         if 'waveform_normalization' in self.params:
             if self.params['waveform_normalization']['scope'] == 'global':
@@ -35,7 +38,7 @@ class FUSA_dataset(Dataset):
         
         if self.waveform_transform is not None:
             waveform = self.waveform_transform(waveform)
-        sample = {'filename': pathlib.Path(file_path).stem, 'waveform': waveform, 'label': torch.from_numpy(self.le.transform([label]))}
+        sample = {'filename': pathlib.Path(file_path).name, 'waveform': waveform, 'label': torch.from_numpy(self.le.transform([label]))}
         sample.update(FeatureProcessor(self.params).read_features(file_path))             
         return sample
 

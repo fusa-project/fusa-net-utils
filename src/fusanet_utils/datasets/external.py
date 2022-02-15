@@ -2,7 +2,7 @@ from pathlib import Path
 import logging
 from typing import Tuple, Dict, Union
 import pandas as pd
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, ConcatDataset
 from abc import abstractmethod
 
 logger = logging.getLogger(__name__)
@@ -11,21 +11,22 @@ class FolderDataset(Dataset):
 
     def __init__(self, folder_path: Union[str, Path]):
         """
-        Expects a folder with audio files
+        Expects a path having subfolders containing audio files from the same class. 
+        The label is taken from the subfolder's name
         """
         if isinstance(folder_path, str):
-            folder_path = Path(folder_path)
-        self.file_list = list(folder_path.glob( '*' ))        
-        self.categories = ['dummy']
-        self.labels = self.categories*len(self.file_list)
-    
+            folder_path = Path(folder_path)        
+        self.file_list = [f for f in folder_path.rglob("*") if f.is_file()]
+        self.labels = [f.parent.stem for f in self.file_list]
+        self.categories =  list(set(self.labels))
+        
     def __getitem__(self, idx: int) -> Tuple[str, int]:
         return (self.file_list[idx], self.labels[idx])
         
     def __len__(self) -> int:        
         return len(self.file_list)
 
-class LabeledDataset(Dataset):
+class DatasetWithCSVMetadata(Dataset):
 
     def __init__(self, repo_path: Union[str, Path], dataset_name: str, audio_rel_path: Path, metadata_rel_path: Path):
         if isinstance(repo_path, str):
@@ -80,7 +81,7 @@ class LabeledDataset(Dataset):
         return len(self.file_list)
 
 
-class ESC(LabeledDataset):
+class ESC(DatasetWithCSVMetadata):
 
     def __init__(self, repo_path: Union[str, Path]):
         super().__init__(repo_path, dataset_name="ESC", audio_rel_path=Path("ESC-50") / "audio", metadata_rel_path=Path("ESC-50") / "meta" / "esc50.csv")
@@ -92,7 +93,7 @@ class ESC(LabeledDataset):
         file_paths = file_names.apply(lambda file_name: self.audio_prefix_path / file_name)
         return file_paths, labels
 
-class UrbanSound8K(LabeledDataset):
+class UrbanSound8K(DatasetWithCSVMetadata):
 
     def __init__(self, repo_path: Union[str, Path]):
         super().__init__(repo_path, dataset_name="UrbanSound", audio_rel_path=Path("UrbanSound8K") / "audio", metadata_rel_path=Path("UrbanSound8K") / "metadata" / "UrbanSound8K.csv")
@@ -107,14 +108,14 @@ class UrbanSound8K(LabeledDataset):
         file_paths = (file_folds / file_names).apply(lambda file_name: self.audio_prefix_path / file_name)
         return file_paths, labels
 
-class VitGlobal(LabeledDataset):
+class VitGlobal(DatasetWithCSVMetadata):
 
     def __init__(self, repo_path: Union[str, Path]):
         super().__init__(repo_path, dataset_name="Vitglobal", audio_rel_path=Path("VitGlobal") / "audio" / "dataset", metadata_rel_path=Path("VitGlobal") / "meta" / "audios_eruido2022_20220121.csv")
 
     def parse_metadata(self, metadata_path: Path) -> Tuple:
         df = pd.read_csv(metadata_path)
-        file_names = df["WAVE_URL"].apply(lambda x: Path(x).stem +'.mp3')
+        file_names = df["WAVE_URL"].apply(lambda x: Path(x).name)
         labels = df["WAVE_MEMO"]
         file_paths = file_names.apply(lambda file_name: self.audio_prefix_path / file_name)
         return file_paths, labels
