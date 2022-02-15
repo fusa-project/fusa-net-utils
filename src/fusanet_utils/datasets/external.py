@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 class FolderDataset(Dataset):
 
-    def __init__(self, folder_path: Union[str, Path]):
+    def __init__(self, folder_path: Union[str, Path], dataset_name: str=None):
         """
         Expects a path having subfolders containing audio files from the same class. 
         The label is taken from the subfolder's name
@@ -17,7 +17,11 @@ class FolderDataset(Dataset):
         if isinstance(folder_path, str):
             folder_path = Path(folder_path)        
         self.file_list = [f for f in folder_path.rglob("*") if f.is_file()]
-        self.labels = [f.parent.stem for f in self.file_list]
+        if dataset_name is not None:
+            label_transforms = self.get_label_transforms(dataset_name)
+            self.labels = [label_transforms[f.parent.stem] for f in self.file_list]
+        else:
+            self.labels = [f.parent.stem for f in self.file_list]
         self.categories =  list(set(self.labels))
         
     def __getitem__(self, idx: int) -> Tuple[str, int]:
@@ -109,6 +113,19 @@ class UrbanSound8K(DatasetWithCSVMetadata):
         return file_paths, labels
 
 class VitGlobal(DatasetWithCSVMetadata):
+
+    def __init__(self, repo_path: Union[str, Path]):
+        super().__init__(repo_path, dataset_name="Vitglobal", audio_rel_path=Path("VitGlobal") / "audio" / "dataset", metadata_rel_path=Path("VitGlobal") / "meta" / "audios_eruido2022_20220121.csv")
+
+    def parse_metadata(self, metadata_path: Path) -> Tuple:
+        df = pd.read_csv(metadata_path)
+        file_names = df["WAVE_URL"].apply(lambda x: Path(x).name)
+        labels = df["WAVE_MEMO"]
+        file_paths = file_names.apply(lambda file_name: self.audio_prefix_path / file_name)
+        return file_paths, labels
+
+
+class MMA(DatasetWithCSVMetadata):
 
     def __init__(self, repo_path: Union[str, Path]):
         super().__init__(repo_path, dataset_name="Vitglobal", audio_rel_path=Path("VitGlobal") / "audio" / "dataset", metadata_rel_path=Path("VitGlobal") / "meta" / "audios_eruido2022_20220121.csv")
