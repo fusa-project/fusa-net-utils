@@ -2,7 +2,7 @@ from pathlib import Path
 import logging
 from typing import Tuple, Dict, Union
 import pandas as pd
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, ConcatDataset
 from abc import abstractmethod
 
 logger = logging.getLogger(__name__)
@@ -124,14 +124,40 @@ class VitGlobal(DatasetWithCSVMetadata):
         return file_paths, labels
 
 
-class MMA(DatasetWithCSVMetadata):
+class MMA_folder(DatasetWithCSVMetadata):
 
-    def __init__(self, repo_path: Union[str, Path]):
-        super().__init__(repo_path, dataset_name="MMA", audio_rel_path=Path("MMA") / "Etiquetado 2" / "00629", metadata_rel_path=Path("MMA") / "Etiquetado 2" / "Autopista Central (00629) project-13-at-2022-02-04-17-40-cbaf7e83.csv")
+    def __init__(self, repo_path: Union[str, Path], folder_name: str, csv_name: str):
+        super().__init__(repo_path, audio_rel_path=Path("MMA") / "Etiquetado 2" / folder_name, metadata_rel_path=Path("MMA") / "Etiquetado 2" / csv_name)
 
     def parse_metadata(self, metadata_path: Path) -> Tuple:
         df = pd.read_csv(metadata_path)
-        file_names = df["WAVE_URL"].apply(lambda x: Path(x).name)
-        labels = df["WAVE_MEMO"]
+        file_names = df["audio"].apply(lambda x: Path(x).name)
+
+        def select_first_label(label):
+            if label[0] == '{':
+                return pd.read_json(label).loc[0][0]
+            return label
+
+        labels = df["taxonomia"].apply(select_first_label)
         file_paths = file_names.apply(lambda file_name: self.audio_prefix_path / file_name)
         return file_paths, labels
+
+class MMA(Dataset):
+    def __init__(self, repo_path: Union[str, Path]):
+        self.datasets = []
+        self.datasets.append(MMA_folder(repo_path, "00629", "Autopista Central (00629) project-13-at-2022-02-04-17-40-cbaf7e83.csv"))
+        self.datasets.append(MMA_folder(repo_path, "00849", "Ñuñoa (00849) project-4-at-2022-02-04-17-42-4f3ef0e5.csv"))
+        self.datasets.append(MMA_folder(repo_path, "01006", "Las Condes (01006) project-5-at-2022-02-04-17-52-1013047c.csv"))
+        self.datasets.append(MMA_folder(repo_path, "01008", "Viña del Mar (01008) project-6-at-2022-02-04-17-41-8a7bf886.csv"))
+        self.datasets.append(MMA_folder(repo_path, "01009", "La Florida (01009) project-7-at-2022-02-04-17-41-6bbd85d2.csv"))
+        self.dataset = ConcatDataset(self.datasets)  
+        self.categories = []
+        for dataset in self.datasets:
+            self.categories += dataset.categories
+        self.categories = sorted(list(set(self.categories)))      
+
+    def __getitem__(self, idx: int) -> Tuple[str, int]:
+        return self.dataset[idx]
+        
+    def __len__(self) -> int:        
+        return len(self.dataset)
