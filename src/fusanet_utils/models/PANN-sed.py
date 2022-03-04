@@ -195,7 +195,7 @@ class Cnn14_DecisionLevelAtt(nn.Module):
     def forward(self, input, mixup_lambda=None):
         """
         Input: (batch_size, data_length)"""
-
+        input = input["waveform"]
         x = self.spectrogram_extractor(input)   # (batch_size, 1, time_steps, freq_bins)
         x = self.logmel_extractor(x)    # (batch_size, 1, time_steps, mel_bins)
 
@@ -241,7 +241,12 @@ class Cnn14_DecisionLevelAtt(nn.Module):
         framewise_output = interpolate(segmentwise_output, self.interpolate_ratio)
         framewise_output = pad_framewise_output(framewise_output, frames_num)
 
-        output_dict = {'framewise_output': framewise_output, 
-            'clipwise_output': clipwise_output}
+        #output_dict = {'framewise_output': framewise_output, 
+        #    'clipwise_output': clipwise_output}
 
-        return output_dict
+        return frame_wise_output
+
+    def create_trace(self, path='traced_model.pt'):
+        dummy_example = {'waveform': torch.randn(1, 1, 160000)}
+        traced_model = torch.jit.trace(self, (dummy_example), strict=False)
+        traced_model.save(path)
