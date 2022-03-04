@@ -15,8 +15,8 @@ from .transforms import Collate_and_transform
 from .datasets.external import ESC, UrbanSound8K, VitGlobal
 from .datasets.fusa import FUSA_dataset
 from .models.naive import ConvolutionalNaive
-from .models.PANN-tag import Wavegram_Logmel_Cnn14
-from .models.PANN-sed import Cnn14_DecisionLevelAtt
+from .models.PANN_tag import Wavegram_Logmel_Cnn14
+from .models.PANN_sed import Cnn14_DecisionLevelAtt
 
 logger = logging.getLogger(__name__)
 
@@ -41,12 +41,11 @@ def initialize_model(model_path: str, params: Dict, n_classes: int, cuda: bool, 
             else:
                 checkpoint = torch.load(pretrained_cache / 'Wavegram_Logmel_Cnn14_mAP=0.439.pth', map_location=torch.device('cpu'))
             model.load_state_dict(checkpoint['model'])
-            if transfer_learning:
-                for param in model.parameters():
-                    param.requires_grad = False
+            for param in model.parameters():
+                param.requires_grad = False
         model.fc_audioset = torch.nn.Linear(2048, n_classes)
     elif params['model'] == 'PANN-sed':
-         model = Cnn14_DecisionLevelAtt(
+        model = Cnn14_DecisionLevelAtt(
             classes_num=527,
             sample_rate=32000,
             window_size=1024,
