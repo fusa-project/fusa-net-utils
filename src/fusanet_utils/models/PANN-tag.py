@@ -251,10 +251,10 @@ class Wavegram_Logmel_Cnn14(nn.Module):
         clipwise_output = torch.sigmoid(self.fc_audioset(x))
         logger.debug(f"{clipwise_output.shape}")
         
-        output_dict = {
-            'clipwise_output': clipwise_output,
-            'embedding': embedding
-            }
+        #output_dict = {
+        #    'clipwise_output': clipwise_output,
+        #    'embedding': embedding
+        #    }
 
         return self.fc_audioset(x)
         
