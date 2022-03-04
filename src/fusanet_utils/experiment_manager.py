@@ -1,6 +1,7 @@
 from typing import Dict, Tuple
 import logging
 import time
+import pathlib
 
 import numpy as np
 import torch
@@ -14,15 +15,16 @@ from .transforms import Collate_and_transform
 from .datasets.external import ESC, UrbanSound8K, VitGlobal
 from .datasets.fusa import FUSA_dataset
 from .models.naive import ConvolutionalNaive
-from .models.PANN import Wavegram_Logmel_Cnn14
+from .models.PANN-tag import Wavegram_Logmel_Cnn14
 
 logger = logging.getLogger(__name__)
 
 
-def initialize_model(model_path: str, params: Dict, n_classes: int, cuda: bool, transfer_learning:bool=True):
+def initialize_model(model_path: str, params: Dict, n_classes: int, cuda: bool, pretrained: bool=True):
+    pretrained_cache = pathlib.Path("../../pretrained_models")
     if  params['model'] == 'naive':
-        model = ConvolutionalNaive(n_classes=n_classes)        
-    elif params['model'] == 'PANN':
+        model = ConvolutionalNaive(n_classes=n_classes)
+    elif params['model'] == 'PANN-tag':
         model = Wavegram_Logmel_Cnn14(
             n_classes=527,
             sampling_rate=32000,
@@ -32,15 +34,36 @@ def initialize_model(model_path: str, params: Dict, n_classes: int, cuda: bool, 
             fmin=50,
             fmax=14000
             )
-        if cuda:
-            checkpoint = torch.load('Wavegram_Logmel_Cnn14_mAP=0.439.pth')
-        else:
-            checkpoint = torch.load('Wavegram_Logmel_Cnn14_mAP=0.439.pth', map_location=torch.device('cpu'))
-        model.load_state_dict(checkpoint['model'])
-        if transfer_learning:
+        if pretrained:
+            if cuda:
+                checkpoint = torch.load(pretrained_cache / 'Wavegram_Logmel_Cnn14_mAP=0.439.pth')
+            else:
+                checkpoint = torch.load(pretrained_cache / 'Wavegram_Logmel_Cnn14_mAP=0.439.pth', map_location=torch.device('cpu'))
+            model.load_state_dict(checkpoint['model'])
+            if transfer_learning:
+                for param in model.parameters():
+                    param.requires_grad = False
+        model.fc_audioset = torch.nn.Linear(2048, n_classes)
+    elif params['model'] == 'PANN-sed':
+         model = Wavegram_Logmel_Cnn14(
+            n_classes=527,
+            sampling_rate=32000,
+            n_fft=1024,
+            hop_length=320,
+            n_mels=64,
+            fmin=50,
+            fmax=14000
+            )
+        if pretrained:
+            if cuda:
+                checkpoint = torch.load(pretrained_cache / 'Cnn14_DecisionLevelAtt_mAP=0.425.pth')
+            else:
+                checkpoint = torch.load(pretrained_cache / 'Cnn14_DecisionLevelAtt_mAP=0.425.pth', map_location=torch.device('cpu'))
+            model.load_state_dict(checkpoint['model'])
             for param in model.parameters():
                 param.requires_grad = False
         model.fc_audioset = torch.nn.Linear(2048, n_classes)
+
     torch.save(model, model_path)
 
 def create_dataset(root_path, params: Dict, stage: str='train'):
