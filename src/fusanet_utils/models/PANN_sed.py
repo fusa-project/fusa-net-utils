@@ -195,9 +195,10 @@ class Cnn14_DecisionLevelAtt(nn.Module):
     def forward(self, input, mixup_lambda=None):
         """
         Input: (batch_size, data_length)"""
-        logger.debug(f"Input: {input.shape}")
+        logger.debug(f"Input: {input}")
         input = input["waveform"]
-        logger.debug(f"Waveform: {input.shape}")
+        input = torch.squeeze(input, 1)
+        logger.debug(f"Waveform: {input.shape}") 
         x = self.spectrogram_extractor(input)   # (batch_size, 1, time_steps, freq_bins)
         logger.debug(f"Spectrogram: {x.shape}")
         x = self.logmel_extractor(x)    # (batch_size, 1, time_steps, mel_bins)
