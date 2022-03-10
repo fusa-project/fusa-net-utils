@@ -195,11 +195,16 @@ class Cnn14_DecisionLevelAtt(nn.Module):
     def forward(self, input, mixup_lambda=None):
         """
         Input: (batch_size, data_length)"""
+        logger.debug(f"Input: {input.shape}")
         input = input["waveform"]
+        logger.debug(f"Waveform: {input.shape}")
         x = self.spectrogram_extractor(input)   # (batch_size, 1, time_steps, freq_bins)
+        logger.debug(f"Spectrogram: {x.shape}")
         x = self.logmel_extractor(x)    # (batch_size, 1, time_steps, mel_bins)
+        logger.debug(f"Logmel: {x.shape}")
 
         frames_num = x.shape[2]
+        logger.debug(f"Frames number: {frames_num}")
         
         x = x.transpose(1, 3)
         x = self.bn0(x)
@@ -234,17 +239,22 @@ class Cnn14_DecisionLevelAtt(nn.Module):
         x = F.relu_(self.fc1(x))
         x = x.transpose(1, 2)
         x = F.dropout(x, p=0.5, training=self.training)
+        logger.debug(f"Last layer : {x.shape}")
         (clipwise_output, _, segmentwise_output) = self.att_block(x)
+        logger.debug(f"clipwise_output : {clipwise_output.shape}")
+        logger.debug(f"segmentwise_output : {segmentwise_output.shape}")
         segmentwise_output = segmentwise_output.transpose(1, 2)
 
         # Get framewise output
         framewise_output = interpolate(segmentwise_output, self.interpolate_ratio)
+        logger.debug(f"interpolate : {framewise_output.shape}")
         framewise_output = pad_framewise_output(framewise_output, frames_num)
-
+        logger.debug(f"pad_framewise_output : {framewise_output.shape}")
+        
         #output_dict = {'framewise_output': framewise_output, 
         #    'clipwise_output': clipwise_output}
 
-        return frame_wise_output
+        return framewise_output
 
     def create_trace(self, path='traced_model.pt'):
         dummy_example = {'waveform': torch.randn(1, 1, 160000)}
