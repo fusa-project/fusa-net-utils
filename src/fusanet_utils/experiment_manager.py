@@ -16,7 +16,7 @@ from .datasets.external import ESC, UrbanSound8K, VitGlobal
 from .datasets.fusa import FUSA_dataset
 from .models.naive import ConvolutionalNaive
 from .models.PANN_tag import Wavegram_Logmel_Cnn14
-from .models.PANN_sed import Cnn14_DecisionLevelAtt
+from .models.PANN_sed import Cnn14_DecisionLevelAtt, AttBlock
 
 logger = logging.getLogger(__name__)
 
@@ -62,7 +62,7 @@ def initialize_model(model_path: str, params: Dict, n_classes: int, cuda: bool, 
             model.load_state_dict(checkpoint['model'])
             for param in model.parameters():
                 param.requires_grad = False
-        model.fc_audioset = torch.nn.Linear(2048, n_classes)
+        model.att_block = AttBlock(2048, n_classes, activation='sigmoid')
 
     torch.save(model, model_path)
 
