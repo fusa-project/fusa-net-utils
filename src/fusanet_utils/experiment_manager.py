@@ -43,7 +43,8 @@ def initialize_model(model_path: str, params: Dict, n_classes: int, cuda: bool, 
             model.load_state_dict(checkpoint['model'])
             for param in model.parameters():
                 param.requires_grad = False
-        model.fc_audioset = torch.nn.Linear(2048, n_classes)
+        model.fc_audioset = torch.nn.Sequential(torch.nn.Linear(2048, 1024), torch.nn.Linear(1024, 512), torch.nn.Linear(512, n_classes))
+
     elif params['model'] == 'PANN-sed':
         model = Cnn14_DecisionLevelAtt(
             classes_num=527,
