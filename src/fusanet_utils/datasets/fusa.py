@@ -54,8 +54,4 @@ class FUSA_dataset(Dataset):
             d[key] = value
         return d
 
-class FUSAv1(FUSA_dataset):
-    def __init__(self, datasets_repo_path, feature_params, waveform_transform=None):
-        dataset = ConcatDataset([ESC(datasets_repo_path), UrbanSound8K(datasets_repo_path)])
-        super().__init__(dataset, feature_params, waveform_transform)
 
