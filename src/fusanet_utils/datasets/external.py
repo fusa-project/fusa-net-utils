@@ -34,7 +34,7 @@ class FolderDataset(Dataset):
             self.labels = [f.parent.stem for f in self.file_list]
         self.categories =  list(set(self.labels))
         
-    def __getitem__(self, idx: int) -> Tuple[str, int]:
+    def __getitem__(self, idx: int) -> Tuple[str, str]:
         return (self.file_list[idx], self.labels[idx])
         
     def __len__(self) -> int:        
