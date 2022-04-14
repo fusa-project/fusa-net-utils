@@ -68,16 +68,18 @@ def initialize_model(model_path: str, params: Dict, n_classes: int, cuda: bool, 
     torch.save(model, model_path)
 
 def create_dataset(root_path, params: Dict, stage: str='train'):
-    if  params[stage]['dataset'] == 'ESC':
-        train_dataset = [ESC(root_path)]
-    elif  params[stage]['dataset'] == 'US':
-        train_dataset = [UrbanSound8K(root_path)]
-    elif params[stage]['dataset'] == 'VitGlobal':
-        train_dataset = [VitGlobal(root_path)]
-    else:
-        train_dataset = [ESC(root_path), UrbanSound8K(root_path)]
+    dataset = []
+    print(params[stage]['dataset'])
+    if  'ESC' in params[stage]['dataset']:
+        dataset.append(ESC(root_path))
+    if  'US' in params[stage]['dataset']:
+        dataset.append(UrbanSound8K(root_path))
+    if 'VitGlobal' in params[stage]['dataset']:
+        dataset.append(VitGlobal(root_path))
+    if 'Poliphonic-mini' in params[stage]['dataset']:
+        dataset.append(Poliphonic(root_path, mini=True))
     # Create dataset for the experiment and save dictionary of classes index to names
-    return FUSA_dataset(ConcatDataset(train_dataset), feature_params=params["features"])
+    return FUSA_dataset(ConcatDataset(dataset), feature_params=params["features"])
 
 def create_dataloaders(dataset, params: Dict):
     train_size = int(params["train"]["train_percent"]*len(dataset))
@@ -138,7 +140,7 @@ def train(loaders: Tuple, params: Dict, model_path: str, cuda: bool) -> None:
         logger.info(f"{epoch}, train/accuracy {global_accuracy/n_train:0.4f}")
         live.log('train/loss', global_loss/n_train)
         live.log('train/accuracy', global_accuracy/n_train)
-        logger.info(f"train time, {time.time() - start_time}")
+        logger.info(f"train time: {time.time() - start_time:0.4f} [s]")
         
         global_loss = 0.0
         global_accuracy = 0.0 
@@ -166,7 +168,7 @@ def train(loaders: Tuple, params: Dict, model_path: str, cuda: bool) -> None:
         live.log('valid/loss', global_loss/n_valid)
         live.log('valid/accuracy', global_accuracy/n_valid)
         live.log('f1_score macro', global_f1_score/len(valid_loader))
-        logger.info(f"valid time, {time.time() - start_time}")
+        logger.info(f"valid time: {time.time() - start_time:0.4f} [s]")
         live.next_step()
 
         if global_loss < best_valid_loss:
