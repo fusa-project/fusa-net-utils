@@ -14,6 +14,7 @@ from tqdm import tqdm
 from .transforms import Collate_and_transform
 from .datasets.external import ESC, UrbanSound8K, VitGlobal
 from .datasets.fusa import FUSA_dataset
+from .datasets.simulated import SimulatedPoliphonic
 from .models.naive import ConvolutionalNaive
 from .models.PANN_tag import Wavegram_Logmel_Cnn14
 from .models.PANN_sed import Cnn14_DecisionLevelAtt, AttBlock
@@ -77,7 +78,7 @@ def create_dataset(root_path, params: Dict, stage: str='train'):
     if 'VitGlobal' in params[stage]['dataset']:
         dataset.append(VitGlobal(root_path))
     if 'Poliphonic-mini' in params[stage]['dataset']:
-        dataset.append(Poliphonic(root_path, mini=True))
+        dataset.append(SimulatedPoliphonic(root_path, mini=True))
     # Create dataset for the experiment and save dictionary of classes index to names
     return FUSA_dataset(ConcatDataset(dataset), feature_params=params["features"])
 
