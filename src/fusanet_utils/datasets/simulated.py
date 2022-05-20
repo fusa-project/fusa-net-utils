@@ -24,7 +24,8 @@ class SimulatedPoliphonic(Dataset):
         # Find number of classes
         for file in (dataset_path / "meta").glob("*.csv"):
             df = pd.read_csv(file, sep=',', header=0)
-            self.categories.append(df["class"].unique)
+            self.categories += list(df["class"].unique())
+        
         self.categories = sorted(list(set(self.categories)))
         self.le = LabelEncoder().fit(self.categories)
         
