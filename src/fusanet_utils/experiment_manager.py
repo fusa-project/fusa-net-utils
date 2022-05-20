@@ -91,6 +91,10 @@ def create_dataloaders(dataset, params: Dict):
     valid_loader = DataLoader(valid_subset, batch_size=8, collate_fn=my_collate, num_workers=4, pin_memory=True)
     return train_loader, valid_loader
 
+def accuracy(y, label):
+    # return torch.sum(y.argmax(1) == label)
+    return torch.sum((y > 0.5) == label)
+
 def train(loaders: Tuple, params: Dict, model_path: str, cuda: bool) -> None:
     """
     Make more abstract to other models
@@ -100,10 +104,11 @@ def train(loaders: Tuple, params: Dict, model_path: str, cuda: bool) -> None:
 
     n_train, n_valid = len(train_loader.dataset), len(valid_loader.dataset)    
     model = torch.load(model_path)
-    #criterion = torch.nn.BCELoss()
+    criterion = torch.nn.BCELoss() # SED
     # TODO: Add param to select BCE/CrossEntropyLoss
     # TODO: Clean this function
-    criterion=torch.nn.CrossEntropyLoss()
+    # criterion = torch.nn.CrossEntropyLoss() # TAG
+
     optimizer = torch.optim.Adam(model.parameters(), lr=params['train']['learning_rate'])
 
     if cuda and torch.cuda.device_count() > 0:
@@ -135,8 +140,7 @@ def train(loaders: Tuple, params: Dict, model_path: str, cuda: bool) -> None:
             loss.backward()
             optimizer.step()
             global_loss += loss.item()
-            accuracy = torch.sum(y.argmax(dim=1) == marshalled_batch['label'])
-            global_accuracy += accuracy.item()
+            global_accuracy += accuracy(y, marshalled_batch['label']).item()
         logger.info(f"{epoch}, train/loss {global_loss/n_train:0.4f}")
         logger.info(f"{epoch}, train/accuracy {global_accuracy/n_train:0.4f}")
         live.log('train/loss', global_loss/n_train)
@@ -160,9 +164,9 @@ def train(loaders: Tuple, params: Dict, model_path: str, cuda: bool) -> None:
                 y = model.forward(marshalled_batch)
                 loss = criterion(y, marshalled_batch['label'])
                 global_loss += loss.item()                         
-                accuracy = torch.sum(y.argmax(dim=1) == marshalled_batch['label'])
-                global_accuracy += accuracy.item()
-                global_f1_score += f1_score(marshalled_batch['label'].cpu(), y.cpu().argmax(dim=1), average='macro')
+                
+                global_accuracy += accuracy(y, marshalled_batch['label']).item() #accuracy.item()
+                #global_f1_score += f1_score(marshalled_batch['label'].cpu(), y.cpu().argmax(dim=1), average='macro') # DOES NOT WORK WITH SED
         logger.info(f"{epoch}, valid/loss {global_loss/n_valid:0.4f}")
         logger.info(f"{epoch}, valid/accuracy {global_accuracy/n_valid:0.4f}")
         logger.info(f"{epoch}, f1_score macro {global_f1_score/len(valid_loader):0.4f}")

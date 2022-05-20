@@ -38,7 +38,8 @@ class FUSA_dataset(Dataset):
         
         if self.waveform_transform is not None:
             waveform = self.waveform_transform(waveform)
-        sample = {'filename': pathlib.Path(file_path).name, 'waveform': waveform, 'label': torch.from_numpy(self.le.transform([label]))}
+        #sample = {'filename': pathlib.Path(file_path).name, 'waveform': waveform, 'label': torch.from_numpy(self.le.transform([label]))} #TAG
+        sample = {'filename': pathlib.Path(file_path).name, 'waveform': waveform, 'label': label} #SED
         sample.update(FeatureProcessor(self.params).read_features(file_path))             
         return sample
 
