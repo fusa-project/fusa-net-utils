@@ -32,7 +32,7 @@ class SimulatedPoliphonic(Dataset):
         for file in (dataset_path / "meta").glob("*.csv"):
             df = pd.read_csv(file, sep=',', header=0)
             for audio_file, metadata in df.groupby(by="audio_filename"):
-                audio_path = dataset_path / "audio" / audio_file
+                audio_path = dataset_path / "audios" / audio_file
                 self.file_list.append(audio_path)
                 self.label_list.append(metadata)
 
