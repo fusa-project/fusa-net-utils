@@ -1,5 +1,6 @@
 from typing import Dict, List
 import pathlib
+import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import LabelEncoder
 import torch
@@ -72,9 +73,11 @@ class FUSA_dataset(Dataset):
         for k, entity in enumerate(label_idx): # TODO: Make this more efficient
             label[start_idx[k]:end_idx[k], entity] = 1.
         
-        if debug:            
-            plt.matshow(label.T)
-            plt.title(audio_path)
-            plt.savefig(f'{audio_path.stem}.png')            
+        if debug:
+            fig, ax = plt.subplots(figsize=(6, 4), tight_layout=True)            
+            ax.pcolormesh(np.linspace(0, 10, 1001), self.categories, label.T, shading='auto', cmap=plt.cm.Blues)
+            ax.set_title(audio_path)
+            ax.grid()
+            fig.savefig(f'{audio_path.stem}.png')            
         
         return label
