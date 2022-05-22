@@ -36,7 +36,7 @@ class SimulatedPoliphonic(Dataset):
                 self.file_list.append(audio_path)
                 self.label_list.append(metadata[['class', 'start (s)', 'end (s)']])
                 
-            break            
+                        
 
     def __getitem__(self, idx: int) -> Tuple[Path, pd.DataFrame]:
         return (self.file_list[idx], self.label_list[idx])
