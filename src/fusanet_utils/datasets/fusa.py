@@ -1,5 +1,6 @@
 from typing import Dict, List
 import pathlib
+import matplotlib.pyplot as plt
 from sklearn.preprocessing import LabelEncoder
 import torch
 from torch.utils.data import Dataset, ConcatDataset
@@ -30,7 +31,7 @@ class FUSA_dataset(Dataset):
                 self.global_normalizer = Global_normalizer(self.params, dataset)
         # Precompute features
         for file_path, _ in self.dataset:
-            FeatureProcessor(self.params, self.global_normalizer).write_features(file_path)            
+            FeatureProcessor(self.params, self.global_normalizer).write_features(file_path)        
 
     def __getitem__(self, idx: int) -> Dict:
         file_path, label = self.dataset[idx]
@@ -38,8 +39,10 @@ class FUSA_dataset(Dataset):
         
         if self.waveform_transform is not None:
             waveform = self.waveform_transform(waveform)
-        #sample = {'filename': pathlib.Path(file_path).name, 'waveform': waveform, 'label': torch.from_numpy(self.le.transform([label]))} #TAG
-        sample = {'filename': pathlib.Path(file_path).name, 'waveform': waveform, 'label': label} #SED
+        if isinstance(label, str): #TAG
+            sample = {'filename': pathlib.Path(file_path).name, 'waveform': waveform, 'label': torch.from_numpy(self.le.transform([label]))} 
+        else: # SED
+            sample = {'filename': pathlib.Path(file_path).name, 'waveform': waveform, 'label': self.build_sed_labels(file_path, label)} 
         sample.update(FeatureProcessor(self.params).read_features(file_path))             
         return sample
 
@@ -55,4 +58,23 @@ class FUSA_dataset(Dataset):
             d[key] = value
         return d
 
-
+    def build_sed_labels(self, audio_path, metadata, debug: bool=False) -> torch.Tensor:
+        # TODO: Read audio length from data and calculate label length from params
+        audio_seconds = 10 
+        # audio_samples = 44100*audio_seconds
+        audio_windows = 1001 # audio_samples // 1000 
+        
+        label = torch.zeros(audio_windows, len(self.categories)) 
+        label_idx = self.le.transform(list(metadata['class'])).astype('int')
+        start_norm, end_norm = (audio_windows/audio_seconds)*metadata[['start (s)', 'end (s)']].values.T
+        start_idx = start_norm.astype('int')
+        end_idx = end_norm.astype('int')
+        for k, entity in enumerate(label_idx): # TODO: Make this more efficient
+            label[start_idx[k]:end_idx[k], entity] = 1.
+        
+        if debug:            
+            plt.matshow(label.T)
+            plt.title(audio_path)
+            plt.savefig(f'{audio_path.stem}.png')            
+        
+        return label

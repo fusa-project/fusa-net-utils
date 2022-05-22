@@ -48,8 +48,10 @@ class Collate_and_transform:
                 sample = transform(sample)
             transformed_batch.append(sample)
         mbatch = {}
-        #mbatch['label'] = torch.LongTensor([sample['label'] for sample in transformed_batch]) # TAG
-        mbatch['label'] =  torch.stack([sample['label'] for sample in transformed_batch], dim=0) # SED
+        if sample['label'].ndim == 1: # TAG
+            mbatch['label'] = torch.LongTensor([sample['label'] for sample in transformed_batch])
+        else: # SED
+            mbatch['label'] =  torch.stack([sample['label'] for sample in transformed_batch], dim=0) 
         mbatch['filename'] = [sample['filename'] for sample in transformed_batch]
         for key in data_keys:
             mbatch[key] =  torch.stack([sample[key] for sample in transformed_batch], dim=0)

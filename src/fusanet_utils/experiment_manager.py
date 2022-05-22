@@ -92,8 +92,16 @@ def create_dataloaders(dataset, params: Dict):
     return train_loader, valid_loader
 
 def accuracy(y, label):
-    # return torch.sum(y.argmax(1) == label)
-    return torch.sum((y > 0.5) == label)
+    if label.ndim == 3: # SED
+        return torch.sum((y > 0.5) == label).item()/(label.shape[1]*label.shape[2])
+    else:
+        return torch.sum(y.argmax(1) == label).item()
+
+def criterion(label):
+    if label.ndim == 3: # SED
+        return torch.nn.BCELoss()
+    else:
+        return torch.nn.CrossEntropyLoss()
 
 def train(loaders: Tuple, params: Dict, model_path: str, cuda: bool) -> None:
     """
@@ -104,11 +112,9 @@ def train(loaders: Tuple, params: Dict, model_path: str, cuda: bool) -> None:
 
     n_train, n_valid = len(train_loader.dataset), len(valid_loader.dataset)    
     model = torch.load(model_path)
-    criterion = torch.nn.BCELoss() # SED
-    # TODO: Add param to select BCE/CrossEntropyLoss
+    
     # TODO: Clean this function
-    # criterion = torch.nn.CrossEntropyLoss() # TAG
-
+    
     optimizer = torch.optim.Adam(model.parameters(), lr=params['train']['learning_rate'])
 
     if cuda and torch.cuda.device_count() > 0:
@@ -136,11 +142,11 @@ def train(loaders: Tuple, params: Dict, model_path: str, cuda: bool) -> None:
                 marshalled_batch[key] = batch[key].to(device, non_blocking=True)
             optimizer.zero_grad()
             y = model.forward(marshalled_batch)
-            loss = criterion(y, marshalled_batch['label'])
+            loss = criterion(marshalled_batch['label'])(y, marshalled_batch['label'])
             loss.backward()
             optimizer.step()
             global_loss += loss.item()
-            global_accuracy += accuracy(y, marshalled_batch['label']).item()
+            global_accuracy += accuracy(y, marshalled_batch['label'])
         logger.info(f"{epoch}, train/loss {global_loss/n_train:0.4f}")
         logger.info(f"{epoch}, train/accuracy {global_accuracy/n_train:0.4f}")
         live.log('train/loss', global_loss/n_train)
@@ -162,10 +168,9 @@ def train(loaders: Tuple, params: Dict, model_path: str, cuda: bool) -> None:
                         continue
                     marshalled_batch[key] = batch[key].to(device, non_blocking=True)
                 y = model.forward(marshalled_batch)
-                loss = criterion(y, marshalled_batch['label'])
-                global_loss += loss.item()                         
-                
-                global_accuracy += accuracy(y, marshalled_batch['label']).item() #accuracy.item()
+                loss = criterion(marshalled_batch['label'])(y, marshalled_batch['label'])
+                global_loss += loss.item()
+                global_accuracy += accuracy(y, marshalled_batch['label'])
                 #global_f1_score += f1_score(marshalled_batch['label'].cpu(), y.cpu().argmax(dim=1), average='macro') # DOES NOT WORK WITH SED
         logger.info(f"{epoch}, valid/loss {global_loss/n_valid:0.4f}")
         logger.info(f"{epoch}, valid/accuracy {global_accuracy/n_valid:0.4f}")
