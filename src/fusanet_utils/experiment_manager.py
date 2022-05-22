@@ -6,7 +6,7 @@ import pathlib
 import numpy as np
 import torch
 from torch.utils.data import DataLoader, random_split, ConcatDataset
-from sklearn.metrics import classification_report, f1_score
+from sklearn.metrics import classification_report 
 from dvclive import Live
 import pandas as pd
 from tqdm import tqdm
@@ -18,6 +18,7 @@ from .datasets.simulated import SimulatedPoliphonic
 from .models.naive import ConvolutionalNaive
 from .models.PANN_tag import Wavegram_Logmel_Cnn14
 from .models.PANN_sed import Cnn14_DecisionLevelAtt, AttBlock
+from .metrics import accuracy, f1_score
 
 logger = logging.getLogger(__name__)
 
@@ -90,12 +91,6 @@ def create_dataloaders(dataset, params: Dict):
     train_loader = DataLoader(train_subset, shuffle=True, batch_size=params["train"]["batch_size"], collate_fn=my_collate, num_workers=4, pin_memory=True)
     valid_loader = DataLoader(valid_subset, batch_size=8, collate_fn=my_collate, num_workers=4, pin_memory=True)
     return train_loader, valid_loader
-
-def accuracy(y, label):
-    if label.ndim == 3: # SED
-        return torch.sum((y > 0.5) == label).item()/(label.shape[1]*label.shape[2])
-    else:
-        return torch.sum(y.argmax(1) == label).item()
 
 def criterion(label):
     if label.ndim == 3: # SED
@@ -171,7 +166,7 @@ def train(loaders: Tuple, params: Dict, model_path: str, cuda: bool) -> None:
                 loss = criterion(marshalled_batch['label'])(y, marshalled_batch['label'])
                 global_loss += loss.item()
                 global_accuracy += accuracy(y, marshalled_batch['label'])
-                #global_f1_score += f1_score(marshalled_batch['label'].cpu(), y.cpu().argmax(dim=1), average='macro') # DOES NOT WORK WITH SED
+                global_f1_score += f1_score(y, marshalled_batch['label']) 
         logger.info(f"{epoch}, valid/loss {global_loss/n_valid:0.4f}")
         logger.info(f"{epoch}, valid/accuracy {global_accuracy/n_valid:0.4f}")
         logger.info(f"{epoch}, f1_score macro {global_f1_score/len(valid_loader):0.4f}")
