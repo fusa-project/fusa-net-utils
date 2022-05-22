@@ -17,89 +17,89 @@ def f1_score(y, label):
 ##### CONTRIBUCION METRICAS SEDNET-ADAVANNE
 
 ##VERSION SEDNET-TORCH
-import torch
-import numpy as np
-from codes import utils
-from ignite.metrics import Metric
+#import torch
+#import numpy as np
+#from codes import utils
+#from ignite.metrics import Metric
 
 
-class er_rate(Metric):
-
-    def __init__(self, output_transform=lambda x: x):
-        super(er_rate, self).__init__(output_transform=output_transform)
-
-    def reset(self):
-        self.FP = 0
-        self.FN = 0
-        self.N = 0
-
-    def update(self, output):
-        y_pred, y = output
-        if len(y_pred.shape) == 3:
-            O = y_pred.reshape(y_pred.shape[0]*y_pred.shape[1],y_pred.shape[2])
-            T = y.reshape(y.shape[0]*y.shape[1],y.shape[2])
-        else:
-            O = y_pred
-            T = y
-        FP = torch.logical_and(T == 0, O == 1).sum(0)
-        FN = torch.logical_and(T == 1, O == 0).sum(0)
-        self.FP += FP
-        self.FN += FN
-        self.N += T.sum()
-        # ... your custom implementation to update internal state on after a single iteration
-              
-    def compute(self):
-        # compute the metric using the internal variables
-        zero = torch.Tensor([0])
-        zero = zero.to("cuda:0")
-        S = torch.minimum(self.FP,self.FN).sum()
-        D = torch.maximum((self.FN-self.FP),zero).sum()
-        I = torch.maximum((self.FP-self.FN),zero).sum()
-        ER = (S+D+I)/(self.N+zero)
-        return ER.item()
-
-class f1_score_A(Metric):
-
-    def __init__(self, output_transform=lambda x: x):
-        super(f1_score, self).__init__(output_transform=output_transform)
-
-    def reset(self):
-        self.TP = 0
-        self.Nref = 0
-        self.Nsys = 0
-
-    def update(self, output):
-        y_pred, y = output
-        if len(y_pred.shape) == 3:
-            O = y_pred.reshape(y_pred.shape[0]*y_pred.shape[1],y_pred.shape[2])
-            T = y.reshape(y.shape[0]*y.shape[1],y.shape[2])
-        else:
-            O = y_pred
-            T = y
-        TP = ((2*T-O)==1).sum()
-        Nref = T.sum()
-        Nsys = O.sum()
-        self.TP += TP
-        self.Nref += Nref
-        self.Nsys += Nsys
-        # ... your custom implementation to update internal state on after a single iteration
-        
-              
-    def compute(self):
-        # compute the metric using the internal variables
-        prec = self.TP / (self.Nsys+torch.finfo(torch.float).eps)
-        recall = self.TP / (self.Nref+torch.finfo(torch.float).eps)
-        f1_score = 2 * prec * recall / (prec + recall + torch.finfo(torch.float).eps)
-        return f1_score
-
-def thresholded_output_transform(output):
-    y_pred, y = output
-    y_pred = torch.round(y_pred)
-    return y_pred, y
+#class er_rate(Metric):
+#
+#    def __init__(self, output_transform=lambda x: x):
+#        super(er_rate, self).__init__(output_transform=output_transform)
+#
+#    def reset(self):
+#        self.FP = 0
+#        self.FN = 0
+#        self.N = 0
+#
+#    def update(self, output):
+#        y_pred, y = output
+#        if len(y_pred.shape) == 3:
+#            O = y_pred.reshape(y_pred.shape[0]*y_pred.shape[1],y_pred.shape[2])
+#            T = y.reshape(y.shape[0]*y.shape[1],y.shape[2])
+#        else:
+#            O = y_pred
+#            T = y
+#        FP = torch.logical_and(T == 0, O == 1).sum(0)
+#        FN = torch.logical_and(T == 1, O == 0).sum(0)
+#        self.FP += FP
+#        self.FN += FN
+#        self.N += T.sum()
+#        # ... your custom implementation to update internal state on after a single iteration
+#              
+#    def compute(self):
+#        # compute the metric using the internal variables
+#        zero = torch.Tensor([0])
+#        zero = zero.to("cuda:0")
+#        S = torch.minimum(self.FP,self.FN).sum()
+#        D = torch.maximum((self.FN-self.FP),zero).sum()
+#        I = torch.maximum((self.FP-self.FN),zero).sum()
+#        ER = (S+D+I)/(self.N+zero)
+#        return ER.item()
+#
+#class f1_score_A(Metric):
+#
+#    def __init__(self, output_transform=lambda x: x):
+#        super(f1_score, self).__init__(output_transform=output_transform)
+#
+#    def reset(self):
+#        self.TP = 0
+#        self.Nref = 0
+#        self.Nsys = 0
+#
+#    def update(self, output):
+#        y_pred, y = output
+#        if len(y_pred.shape) == 3:
+#            O = y_pred.reshape(y_pred.shape[0]*y_pred.shape[1],y_pred.shape[2])
+#            T = y.reshape(y.shape[0]*y.shape[1],y.shape[2])
+#        else:
+#            O = y_pred
+#            T = y
+#        TP = ((2*T-O)==1).sum()
+#        Nref = T.sum()
+#        Nsys = O.sum()
+#        self.TP += TP
+#        self.Nref += Nref
+#        self.Nsys += Nsys
+#        # ... your custom implementation to update internal state on after a single iteration
+#        
+#              
+#    def compute(self):
+#        # compute the metric using the internal variables
+#        prec = self.TP / (self.Nsys+torch.finfo(torch.float).eps)
+#        recall = self.TP / (self.Nref+torch.finfo(torch.float).eps)
+#        f1_score = 2 * prec * recall / (prec + recall + torch.finfo(torch.float).eps)
+#        return f1_score
+#
+#def thresholded_output_transform(output):
+#    y_pred, y = output
+#    y_pred = torch.round(y_pred)
+#    return y_pred, y
 
 """
 METRICAS COPIADAS TEXTUAL DESDE SEDNET ADAVANNE
-"""
+
 #####################
 # Scoring functions
 #
@@ -177,9 +177,9 @@ def compute_scores_orig(pred, y, frames_in_1_sec=50):
     scores['f1_overall_1sec'] = np.around(f1_overall_1sec(pred, y, frames_in_1_sec),3)
     scores['er_overall_1sec'] = np.around(er_overall_1sec(pred, y, frames_in_1_sec),3)
     return scores
-
-def compute_scores(pred, y):
-    scores = dict()
-    scores['f1'] = f1_overall_framewise(pred, y)
-    scores['er'] = er_overall_framewise(pred, y)
-    return scores
+"""
+#def compute_scores(pred, y):
+#    scores = dict()
+#    scores['f1'] = f1_overall_framewise(pred, y)
+#    scores['er'] = er_overall_framewise(pred, y)
+#    return scores
