@@ -80,6 +80,8 @@ def create_dataset(root_path, params: Dict, stage: str='train'):
         dataset.append(VitGlobal(root_path))
     if 'Poliphonic-mini' in params[stage]['dataset']:
         dataset.append(SimulatedPoliphonic(root_path, mini=True))
+    if 'Poliphonic' in params[stage]['dataset']:
+        dataset.append(SimulatedPoliphonic(root_path, mini=False))
     # Create dataset for the experiment and save dictionary of classes index to names
     return FUSA_dataset(ConcatDataset(dataset), feature_params=params["features"])
 
