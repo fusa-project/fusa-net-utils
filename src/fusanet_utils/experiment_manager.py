@@ -23,7 +23,7 @@ from .metrics import accuracy, f1_score
 logger = logging.getLogger(__name__)
 
 
-def initialize_model(model_path: str, params: Dict, n_classes: int, cuda: bool, pretrained: bool=True):
+def initialize_model(model_path: str, params: Dict, n_classes: int, cuda: bool, pretrained: bool):
     pretrained_cache = pathlib.Path("../../pretrained_models")
     if  params['model'] == 'naive':
         model = ConvolutionalNaive(n_classes=n_classes)
@@ -137,6 +137,8 @@ def train(loaders: Tuple, params: Dict, model_path: str, cuda: bool) -> None:
                 if key == 'filename':
                     continue
                 marshalled_batch[key] = batch[key].to(device, non_blocking=True)
+                if key == 'waveform':
+                    marshalled_batch[key] = marshalled_batch[key][:,:,:320002]
             optimizer.zero_grad()
             y = model.forward(marshalled_batch)
             loss = criterion(marshalled_batch['label'])(y, marshalled_batch['label'])
@@ -164,6 +166,8 @@ def train(loaders: Tuple, params: Dict, model_path: str, cuda: bool) -> None:
                     if key == 'filename':
                         continue
                     marshalled_batch[key] = batch[key].to(device, non_blocking=True)
+                    if key == 'waveform':
+                        marshalled_batch[key] = marshalled_batch[key][:,:,:320002]
                 y = model.forward(marshalled_batch)
                 loss = criterion(marshalled_batch['label'])(y, marshalled_batch['label'])
                 global_loss += loss.item()
