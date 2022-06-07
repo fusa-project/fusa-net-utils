@@ -178,7 +178,7 @@ def train(loaders: Tuple, params: Dict, model_path: str, cuda: bool) -> None:
         logger.info(f"{epoch}, valid/loss {global_loss/n_valid:0.4f}")
         logger.info(f"{epoch}, valid/accuracy {global_accuracy/n_valid:0.4f}")
         logger.info(f"{epoch}, f1_score macro {global_f1_score/len(valid_loader):0.4f}")
-        logger.info(f"{epoch}, error_rate macro {global_error_rate/len(valid_loader):0.4f}")
+        logger.info(f"{epoch}, error_rate {global_error_rate/len(valid_loader):0.4f}")
         live.log('valid/loss', global_loss/n_valid)
         live.log('valid/accuracy', global_accuracy/n_valid)
         live.log('f1_score macro', global_f1_score/len(valid_loader))
@@ -188,7 +188,7 @@ def train(loaders: Tuple, params: Dict, model_path: str, cuda: bool) -> None:
 
         #if global_loss < best_metric:
             #logger.info(f"new best valid loss in epoch {epoch}!")
-        if global_f1_score < best_metric:
+        if global_f1_score > best_metric:
             logger.info(f"new best f1_score in epoch {epoch}!")
             if device == 'cuda':
                 model.cpu()
