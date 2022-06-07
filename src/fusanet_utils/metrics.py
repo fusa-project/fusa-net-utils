@@ -19,6 +19,15 @@ def f1_score(y, label):
     else:
         return sklearn.metrics.f1_score(label.cpu().numpy(), y.cpu().argmax(dim=1).numpy(), average='macro')
 
+def error_rate(y, label):
+    if label.ndim == 3: # SED
+        frames_in_1_sec = 100
+        y = torch.where(y > 0.5, 1., 0.)
+        error_rate = np.round(er_overall_1sec(y, label, frames_in_1_sec), 3)
+        return error_rate
+    else:
+        return eps
+
 def reshape_3Dto2D(A):
     return A.view(A.shape[0] * A.shape[1], A.shape[2])
 
