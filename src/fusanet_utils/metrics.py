@@ -23,7 +23,7 @@ def error_rate(y, label):
     if label.ndim == 3: # SED
         frames_in_1_sec = 100
         y = torch.where(y > 0.5, 1., 0.)
-        error_rate = np.round(er_overall_1sec(y, label, frames_in_1_sec), 3)
+        error_rate = np.round(er_overall_1sec(y, label, frames_in_1_sec).item(), 3)
         return error_rate
     else:
         return eps
@@ -48,12 +48,12 @@ def er_overall_framewise(O, T):
 
     FP = torch.logical_and(T == 0, O == 1).sum(1)
     FN = torch.logical_and(T == 1, O == 0).sum(1)
-    S = torch.minimum(FP, FN).sum()
-    D = torch.maximum(0, FN-FP).sum()
-    I = torch.maximum(0, FP-FN).sum()
+    S = torch.min(FP, FN).sum()
+    D = torch.max(torch.tensor([0]), FN-FP).sum()
+    I = torch.max(torch.tensor([0]), FP-FN).sum()
 
     Nref = T.sum()
-    ER = (S+D+I) / (Nref + 0.0)
+    ER = (S+D+I) / (Nref + torch.tensor([0]))
     return ER
 
 def f1_overall_1sec(O, T, block_size):
