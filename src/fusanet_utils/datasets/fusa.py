@@ -61,11 +61,11 @@ class FUSA_dataset(Dataset):
 
     def build_sed_labels(self, audio_path, metadata, debug: bool=False) -> torch.Tensor:
         # TODO: Read audio length from data and calculate label length from params
-        audio_seconds = 10 
+        audio_seconds = 10
         # audio_samples = 44100*audio_seconds
-        audio_windows = 1001 # audio_samples // 1000 
+        audio_windows = 1001 # audio_samples // 1000
         
-        label = torch.zeros(audio_windows, len(self.categories)) 
+        label = torch.zeros(audio_windows, len(self.categories))
         label_idx = self.le.transform(list(metadata['class'])).astype('int')
         start_norm, end_norm = (audio_windows/audio_seconds)*metadata[['start (s)', 'end (s)']].values.T
         start_idx = start_norm.astype('int')
@@ -74,10 +74,13 @@ class FUSA_dataset(Dataset):
             label[start_idx[k]:end_idx[k], entity] = 1.
         
         if debug:
-            fig, ax = plt.subplots(figsize=(6, 4), tight_layout=True)            
-            ax.pcolormesh(np.linspace(0, 10, 1001), self.categories, label.T, shading='auto', cmap=plt.cm.Blues)
+            fig, ax = plt.subplots(figsize=(12, 8), tight_layout=True)
+            ax.set_yticklabels
+            ax.set_xticks(np.linspace(0, 10, 21))
+            ax.pcolormesh(np.linspace(0, 10, 1001), self.categories, label.T, shading='auto', cmap=plt.cm.plasma, linewidth=0.2)
             ax.set_title(audio_path)
             ax.grid()
-            fig.savefig(f'{audio_path.stem}.png')            
-        
+            ax.yaxis.labelpad = 100
+            fig.savefig(f'{audio_path}_gt.pdf')
+
         return label
