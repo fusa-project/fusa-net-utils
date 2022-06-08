@@ -6,7 +6,7 @@ import pathlib
 import numpy as np
 import torch
 from torch.utils.data import DataLoader, random_split, ConcatDataset
-from sklearn.metrics import classification_report 
+from sklearn.metrics import classification_report
 from dvclive import Live
 import pandas as pd
 from tqdm import tqdm
@@ -18,7 +18,7 @@ from .datasets.simulated import SimulatedPoliphonic
 from .models.naive import ConvolutionalNaive
 from .models.PANN_tag import Wavegram_Logmel_Cnn14
 from .models.PANN_sed import Cnn14_DecisionLevelAtt, AttBlock
-from .metrics import accuracy, f1_score
+from .metrics import accuracy, f1_score, error_rate
 
 logger = logging.getLogger(__name__)
 
@@ -107,7 +107,7 @@ def train(loaders: Tuple, params: Dict, model_path: str, cuda: bool) -> None:
     live = Live()
     train_loader, valid_loader = loaders
 
-    n_train, n_valid = len(train_loader.dataset), len(valid_loader.dataset)    
+    n_train, n_valid = len(train_loader.dataset), len(valid_loader.dataset)
     model = torch.load(model_path)
     
     # TODO: Clean this function
@@ -120,13 +120,13 @@ def train(loaders: Tuple, params: Dict, model_path: str, cuda: bool) -> None:
         torch.backends.cudnn.benchmark = True
     else:
         device = 'cpu'
-    logger.info(f'Using {device}') 
+    logger.info(f'Using {device}')
 
-    best_valid_loss = np.inf
+    best_metric = np.NINF
     for epoch in range(params["train"]["nepochs"]):
         global_loss = 0.0
-        global_accuracy = 0.0  
-        model.to(device) 
+        global_accuracy = 0.0
+        model.to(device)
         model.train()
         start_time = time.time()
         for batch in train_loader:
@@ -151,10 +151,11 @@ def train(loaders: Tuple, params: Dict, model_path: str, cuda: bool) -> None:
         live.log('train/loss', global_loss/n_train)
         live.log('train/accuracy', global_accuracy/n_train)
         logger.info(f"train time: {time.time() - start_time:0.4f} [s]")
-        
+
         global_loss = 0.0
-        global_accuracy = 0.0 
-        global_f1_score = 0.0 
+        global_accuracy = 0.0
+        global_f1_score = 0.0
+        global_error_rate = 0.0
         model.eval()
         start_time = time.time()
         with torch.no_grad():
@@ -172,23 +173,29 @@ def train(loaders: Tuple, params: Dict, model_path: str, cuda: bool) -> None:
                 loss = criterion(marshalled_batch['label'])(y, marshalled_batch['label'])
                 global_loss += loss.item()
                 global_accuracy += accuracy(y, marshalled_batch['label'])
-                global_f1_score += f1_score(y, marshalled_batch['label']) 
+                global_f1_score += f1_score(y, marshalled_batch['label'])
+                global_error_rate += error_rate(y, marshalled_batch['label'])
         logger.info(f"{epoch}, valid/loss {global_loss/n_valid:0.4f}")
         logger.info(f"{epoch}, valid/accuracy {global_accuracy/n_valid:0.4f}")
-        logger.info(f"{epoch}, f1_score macro {global_f1_score/len(valid_loader):0.4f}")
+        logger.info(f"{epoch}, f1_score_macro {global_f1_score/len(valid_loader):0.4f}")
+        logger.info(f"{epoch}, error_rate {global_error_rate/len(valid_loader):0.4f}")
         live.log('valid/loss', global_loss/n_valid)
         live.log('valid/accuracy', global_accuracy/n_valid)
-        live.log('f1_score macro', global_f1_score/len(valid_loader))
+        live.log('f1_score_macro', global_f1_score/len(valid_loader))
+        live.log('error_rate', global_error_rate/len(valid_loader))
         logger.info(f"valid time: {time.time() - start_time:0.4f} [s]")
         live.next_step()
 
-        if global_loss < best_valid_loss:
-            logger.info(f"new best valid loss in epoch {epoch}!")
-            if device == 'cuda': 
+        #if global_loss < best_metric:
+            #logger.info(f"new best valid loss in epoch {epoch}!")
+        if global_f1_score > best_metric:
+            logger.info(f"new best f1_score in epoch {epoch}!")
+            if device == 'cuda':
                 model.cpu()
             torch.save(model, model_path)
             model.create_trace()
-            best_valid_loss = global_loss
+            #best_metric = global_loss
+            best_metric = global_f1_score
 
 def evaluate_model(dataset, params: Dict, model_path: str, label_dictionary: Dict) -> None:
     model = torch.load(model_path)
@@ -196,7 +203,7 @@ def evaluate_model(dataset, params: Dict, model_path: str, label_dictionary: Dic
     model.eval()
     names, predictions, labels = [], [], []
     preds_str, label_str = [], []
-    
+
     my_collate = Collate_and_transform(params['features'])
     loader = DataLoader(dataset, batch_size=8, collate_fn=my_collate, num_workers=4, pin_memory=True)
     with torch.no_grad():
@@ -205,13 +212,13 @@ def evaluate_model(dataset, params: Dict, model_path: str, label_dictionary: Dic
             predictions.append(model.forward(batch).argmax(dim=1).numpy())
             labels.append(batch['label'].numpy())
             preds_str += [label_dictionary[str(prediction)] for prediction in predictions[-1]]
-            label_str += [label_dictionary[str(label)] for label in labels[-1]]            
+            label_str += [label_dictionary[str(label)] for label in labels[-1]]
     names = np.concatenate(names)
     predictions = np.concatenate(predictions)
     labels = np.concatenate(labels)
     df = pd.DataFrame(list(zip(names, predictions, preds_str, labels, label_str)), columns=['filename', 'prediction_num', 'prediction_str', 'label_num', 'label_str'])
     df.to_csv('classification_table.csv')
-    
+
     report = classification_report(y_true=labels, y_pred=predictions, labels=[int(label) for label in label_dictionary.keys()], target_names=label_dictionary.values(), output_dict=True)
     df_classification_report = pd.DataFrame(report).transpose()
-    df_classification_report.to_csv('classification_report.csv')    
+    df_classification_report.to_csv('classification_report.csv')
