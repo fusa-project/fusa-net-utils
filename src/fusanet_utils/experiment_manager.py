@@ -122,7 +122,7 @@ def train(loaders: Tuple, params: Dict, model_path: str, cuda: bool) -> None:
         device = 'cpu'
     logger.info(f'Using {device}')
 
-    best_metric = np.inf
+    best_metric = np.NINF
     for epoch in range(params["train"]["nepochs"]):
         global_loss = 0.0
         global_accuracy = 0.0
