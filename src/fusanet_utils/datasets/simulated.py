@@ -11,13 +11,16 @@ logger = logging.getLogger(__name__)
 
 class SimulatedPoliphonic(Dataset):
 
-    def __init__(self, repo_path: Union[str, Path], mini: bool=True):
+    def __init__(self, repo_path: Union[str, Path], mini: bool=True, external: bool=False):
         if isinstance(repo_path, str):
             repo_path = Path(repo_path)
         if mini: 
             dataset_path = repo_path / "datasets" / "Poliphonic mono mini"
         else:
-            dataset_path = repo_path / "datasets" / "Poliphonic mono"
+            if external:
+                dataset_path = repo_path / "datasets" / "Poliphonic mono external"
+            else:
+                dataset_path = repo_path / "datasets" / "Poliphonic mono"
         self.categories = []
         self.file_list = []
         self.label_list = []
