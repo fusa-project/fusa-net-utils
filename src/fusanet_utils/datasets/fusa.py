@@ -43,7 +43,7 @@ class FUSA_dataset(Dataset):
         if isinstance(label, str): #TAG
             sample = {'filename': pathlib.Path(file_path).name, 'waveform': waveform, 'label': torch.from_numpy(self.le.transform([label]))} 
         else: # SED
-            sample = {'filename': pathlib.Path(file_path).name, 'waveform': waveform, 'label': self.build_sed_labels(file_path, label)} 
+            sample = {'filename': pathlib.Path(file_path).name, 'waveform': waveform, 'label': self.build_sed_labels(waveform.shape[1], label, self.params)} 
         sample.update(FeatureProcessor(self.params).read_features(file_path))             
         return sample
 
@@ -59,11 +59,10 @@ class FUSA_dataset(Dataset):
             d[key] = value
         return d
 
-    def build_sed_labels(self, audio_path, metadata, debug: bool=False) -> torch.Tensor:
-        # TODO: Read audio length from data and calculate label length from params
-        audio_seconds = 10
-        # audio_samples = 44100*audio_seconds
-        audio_windows = 1001 # audio_samples // 1000
+    def build_sed_labels(self, n_samples: int, metadata: Dict, params: Dict) -> torch.Tensor:
+        sample_rate = params['sampling_rate']
+        audio_seconds = n_samples // sample_rate
+        audio_windows = n_samples // 320 +1  
         
         label = torch.zeros(audio_windows, len(self.categories))
         label_idx = self.le.transform(list(metadata['class'])).astype('int')
@@ -73,14 +72,4 @@ class FUSA_dataset(Dataset):
         for k, entity in enumerate(label_idx): # TODO: Make this more efficient
             label[start_idx[k]:end_idx[k], entity] = 1.
         
-        if debug:
-            fig, ax = plt.subplots(figsize=(12, 8), tight_layout=True)
-            ax.set_yticklabels
-            ax.set_xticks(np.linspace(0, 10, 21))
-            ax.pcolormesh(np.linspace(0, 10, 1001), self.categories, label.T, shading='auto', cmap=plt.cm.plasma, linewidth=0.2)
-            ax.set_title(audio_path)
-            ax.grid()
-            ax.yaxis.labelpad = 100
-            fig.savefig(f'{audio_path}_gt.pdf')
-
         return label
