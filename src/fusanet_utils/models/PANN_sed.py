@@ -261,3 +261,27 @@ class Cnn14_DecisionLevelAtt(nn.Module):
         dummy_example = {'waveform': torch.randn(1, 1, 160000)}
         traced_model = torch.jit.trace(self, (dummy_example), strict=False)
         traced_model.save(path)
+
+
+
+if __name__ == '__main__':
+    # Experiment to check the number of frames
+
+    model = Cnn14_DecisionLevelAtt(classes_num=527, sample_rate=32000, window_size=1024, hop_size=320, mel_bins=64, fmin=50, fmax=14000)
+    
+    windows = {}
+    for n_samples in range(32000, 320000, 1000):
+        dummy_audio = torch.randn(n_samples)
+        pred = model({"waveform": dummy_audio.unsqueeze(0)})
+        windows[n_samples] = pred.shape[1]
+        print(f"{n_samples//320 +1} {pred.shape[1]} {pred.shape[1] == n_samples//320 +1}")
+
+    import scipy.stats
+    print(scipy.stats.linregress(list(windows.keys()), list(windows.values())))
+
+    import matplotlib.pyplot as plt
+    fig, ax = plt.subplots(facecolor='w')
+    ax.plot(list(windows.keys()), list(windows.values()))
+    ax.set_xlabel('Largo del audio')
+    ax.set_ylabel('Cantidad de ventanas')
+    plt.savefig('ventanas_sed.png')
