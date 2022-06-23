@@ -19,7 +19,7 @@ mic_location = {
 
 class SimulatedPoliphonic(Dataset):
     def __init__(
-        self, repo_path: Union[str, Path], mini: bool = True, external: bool = False
+        self, repo_path: Union[str, Path], mini: bool = True, external: bool = False, categories: List=None
     ):
         if isinstance(repo_path, str):
             repo_path = Path(repo_path)
@@ -34,9 +34,12 @@ class SimulatedPoliphonic(Dataset):
         self.file_list = []
         self.label_list = []
         # Find number of classes
-        for file in (dataset_path / "meta").glob("*.csv"):
-            df = pd.read_csv(file, sep=",", header=0)
-            self.categories += list(df["class"].unique())
+        if categories is None:
+            for file in (dataset_path / "meta").glob("*.csv"):
+                df = pd.read_csv(file, sep=",", header=0)
+                self.categories += list(df["class"].unique())
+        else:
+            self.categories = categories
 
         self.categories = sorted(list(set(self.categories)))
 
