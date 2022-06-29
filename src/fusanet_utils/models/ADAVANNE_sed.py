@@ -127,3 +127,27 @@ class SEDnet(nn.Module):
         dummy_example = {'mel_transform': torch.randn(4, 1, 40, 431)}
         traced_model = torch.jit.trace(self, (dummy_example), strict=False)
         traced_model.save(path)
+        
+        
+if __name__ == '__main__':
+    # Experiment to check the number of frames
+
+    model = SEDnet(n_classes=527)
+    
+    windows = {}
+    for n_samples in range(44100, 441000, 1000):
+        windows_number = n_samples // 1024 + 1
+        mel_transform = torch.randn([1, 1, 40, windows_number])
+        pred = model({"mel_transform": mel_transform})
+        windows[n_samples] = pred.shape[1]
+        print(f"{windows_number} {pred.shape[1]} {pred.shape[1] == windows_number}")
+
+    import scipy.stats
+    print(scipy.stats.linregress(list(windows.keys()), list(windows.values())))
+
+    import matplotlib.pyplot as plt
+    fig, ax = plt.subplots(facecolor='w')
+    ax.plot(list(windows.keys()), list(windows.values()))
+    ax.set_xlabel('Largo del audio')
+    ax.set_ylabel('Cantidad de ventanas')
+    plt.savefig('ventanas_sed.png')
