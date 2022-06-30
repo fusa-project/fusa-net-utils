@@ -6,19 +6,34 @@ from typing import Dict, List
 
 logger = logging.getLogger(__name__)
 
-def resize(data, target_length):
-    if data.size(-1) < target_length:
-        append_length = target_length-data.size(-1)
-        return pad(data, (0, append_length), mode='constant', value=0)
-    elif data.size(-1) > target_length:
-        if data.ndim == 2: # audio
-            return data[:,:target_length]
+def crop(data, target_length, collate_dim):
+    if data.size(collate_dim) > target_length:
+        if data.ndim == 2: 
+            if collate_dim == -1: # audio
+                data = data[:,:target_length]
+            elif collate_dim == -2: # sed label
+                data = data[:target_length, :] 
         elif data.ndim == 3: # spectrogram
-            return data[:,:,:target_length]
+            data = data[:,:,:target_length]
         else:
             raise NotImplementedError("Only 3D o 4D tensors accepted")
-    else:
-        return data
+    return data
+
+def append(data, target_length, collate_dim):
+    if data.size(collate_dim) < target_length:
+        append_length = target_length-data.size(collate_dim)
+        if data.ndim == 2:
+            if collate_dim == -1: # audio
+                data = pad(data, (0, append_length, 0, 0), mode='constant', value=0)
+            elif collate_dim == -2: #sed label
+                print(data.shape)
+                data =  pad(data, (0, 0, 0, append_length), mode='constant', value=0)
+                print(data.shape)
+        elif data.ndim == 3: # spectrogram
+            data = pad(data, (0, append_length, 0, 0, 0, 0), mode='constant', value=0)
+        else:
+            raise NotImplementedError("Only 3D o 4D tensors accepted")
+    return data
 
 class Collate_and_transform:
     
@@ -28,19 +43,24 @@ class Collate_and_transform:
         
     def __call__(self, batch: List[Dict]) -> Tensor:
         data_keys = list(batch[0].keys())
-        data_keys.remove('label')
+        if batch[0]['label'].ndim == 1: # TAG
+            data_keys.remove('label')
         data_keys.remove('filename')
         for key in data_keys:
             if not self.resizer == 'none':
-                lens = [sample[key].size(-1) for sample in batch]  
+                if key == 'label':
+                    collate_dim = -2 
+                else:
+                    collate_dim = -1
+                lens = [sample[key].size(collate_dim) for sample in batch]  
+                logger.debug(f"{self.resizer} {lens}")             
                 if self.resizer == 'pad':
-                    target_length = max(lens)
+                    for sample in batch:
+                        sample[key] = append(sample[key], max(lens), collate_dim)
                 elif self.resizer == 'crop':
-                    target_length = min(lens)
-                logger.debug(f"{self.resizer} {target_length} {lens}")             
-                for sample in batch:
-                    sample[key] = resize(sample[key], target_length)
-        
+                    for sample in batch:
+                        sample[key] = crop(sample[key], min(lens), collate_dim)
+                
         # Data augmentation transforms
         transformed_batch = []
         for sample in batch:
