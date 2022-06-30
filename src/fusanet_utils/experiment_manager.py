@@ -65,7 +65,7 @@ def initialize_model(model_path: str, params: Dict, n_classes: int, cuda: bool, 
             model.load_state_dict(checkpoint['model'])
             for param in model.parameters():
                 param.requires_grad = False
-        model.fc1 = torch.nn.Sequential(torch.nn.Linear(2048, 1024), torch.nn.Linear(1024, 512))
+        model.fc1 = torch.nn.Sequential(torch.nn.Linear(2048, 1024), torch.nn.Linear(1024, 512), torch.nn.Linear(512, 512))
         model.att_block = AttBlock(512, n_classes, activation='sigmoid')
 
     torch.save(model, model_path)
