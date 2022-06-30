@@ -18,6 +18,7 @@ from .datasets.simulated import SimulatedPoliphonic
 from .models.naive import ConvolutionalNaive
 from .models.PANN_tag import Wavegram_Logmel_Cnn14
 from .models.PANN_sed import Cnn14_DecisionLevelAtt, AttBlock
+from .models.ADAVANNE_sed import SEDnet
 from .metrics import accuracy, f1_score, error_rate
 
 logger = logging.getLogger(__name__)
@@ -67,6 +68,8 @@ def initialize_model(model_path: str, params: Dict, n_classes: int, cuda: bool, 
                 param.requires_grad = False
         model.fc1 = torch.nn.Sequential(torch.nn.Linear(2048, 1024), torch.nn.Linear(1024, 512), torch.nn.Linear(512, 512))
         model.att_block = AttBlock(512, n_classes, activation='sigmoid')
+    elif params['model'] == 'ADAVANNE-sed':
+        model = SEDnet(n_classes=n_classes)
 
     torch.save(model, model_path)
 
