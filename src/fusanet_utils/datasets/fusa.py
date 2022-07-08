@@ -62,8 +62,10 @@ class FUSA_dataset(Dataset):
     def build_sed_labels(self, n_samples: int, metadata: Dict, params: Dict) -> torch.Tensor:
         sample_rate = params['sampling_rate']
         audio_seconds = n_samples // sample_rate
-        #audio_windows = n_samples // 320 +1 #PANN
-        audio_windows = n_samples // 1024 + 1  #ADAVANNE
+        if 'mel_transform' in params:
+            audio_windows = n_samples // params['mel_transform']['hop_length'] + 1  #ADAVANNE
+        else:
+            audio_windows = n_samples // 320 +1 #PANN
         
         label = torch.zeros(audio_windows, len(self.categories))
         label_idx = self.le.transform(list(metadata['class'])).astype('int')
