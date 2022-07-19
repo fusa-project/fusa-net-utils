@@ -16,23 +16,11 @@ mic_location = {
     "market": np.array([25.0, 2.0, -20.0]),
 }
 
-
-class SimulatedPoliphonic(Dataset):
-    def __init__(
-        self, repo_path: Union[str, Path], mini: bool = True, external: bool = False, categories: List=None
-    ):
-        if isinstance(repo_path, str):
-            repo_path = Path(repo_path)
-        if mini:
-            dataset_path = repo_path / "datasets" / "Poliphonic mono mini"
-        else:
-            if external:
-                dataset_path = repo_path / "datasets" / "Poliphonic mono external"
-            else:
-                dataset_path = repo_path / "datasets" / "Poliphonic mono"
-        self.categories = []
-        self.file_list = []
-        self.label_list = []
+class SimulatedPoliphonicFolder(Dataset):
+    def __init__(self, dataset_path: Union[str, Path], categories: List=None):
+        if isinstance(dataset_path, str):
+            dataset_path = Path(dataset_path)
+        self.categories, self.file_list, self.label_list = [], [], []
         # Find number of classes
         if categories is None:
             for file in (dataset_path / "meta").glob("*.csv"):
@@ -40,7 +28,6 @@ class SimulatedPoliphonic(Dataset):
                 self.categories += list(df["class"].unique())
         else:
             self.categories = categories
-
         self.categories = sorted(list(set(self.categories)))
 
         for file in (dataset_path / "meta").glob("*.csv"):
@@ -64,3 +51,18 @@ class SimulatedPoliphonic(Dataset):
     def __len__(self) -> int:
         return len(self.file_list)
 
+
+class SimulatedPoliphonic(SimulatedPoliphonicFolder):
+    def __init__(
+        self, repo_path: Union[str, Path], mini: bool = True, external: bool = False, categories: List=None
+    ):
+        if isinstance(repo_path, str):
+            repo_path = Path(repo_path)
+        if mini:
+            dataset_path = repo_path / "datasets" / "Poliphonic mono mini"
+        else:
+            if external:
+                dataset_path = repo_path / "datasets" / "Poliphonic mono external"
+            else:
+                dataset_path = repo_path / "datasets" / "Poliphonic mono"
+        super().__init__(dataset_path, categories)
