@@ -19,6 +19,7 @@ from .models.naive import ConvolutionalNaive
 from .models.PANN_tag import Wavegram_Logmel_Cnn14
 from .models.PANN_sed import Cnn14_DecisionLevelAtt, AttBlock
 from .models.ADAVANNE_sed import SEDnet
+from .models.HTS.htsat import HTSAT_Swin_Transformer
 from .metrics import accuracy, f1_score, error_rate
 
 logger = logging.getLogger(__name__)
@@ -70,6 +71,16 @@ def initialize_model(model_path: str, params: Dict, n_classes: int, cuda: bool, 
         model.att_block = AttBlock(512, n_classes, activation='sigmoid')
     elif params['model'] == 'ADAVANNE-sed':
         model = SEDnet(n_classes=n_classes)
+    elif params['model'] == 'HTS':
+        model = HTSAT_Swin_Transformer(
+            classes_num=n_classes,
+            sample_rate=32000,
+            window_size=1024,
+            hop_size=320,
+            mel_bins=64,
+            fmin=50,
+            fmax=14000
+        )
 
     torch.save(model, model_path)
 
