@@ -41,9 +41,11 @@ class FUSA_dataset(Dataset):
         if self.waveform_transform is not None:
             waveform = self.waveform_transform(waveform)
         if isinstance(label, str): #TAG
-            sample = {'filename': pathlib.Path(file_path).name, 'waveform': waveform, 'label': torch.from_numpy(self.le.transform([label]))} 
+            label_tag = torch.from_numpy(self.le.transform([label]))
+            sample = {'filename': pathlib.Path(file_path).name, 'waveform': waveform, 'label': label_tag} 
         else: # SED
-            sample = {'filename': pathlib.Path(file_path).name, 'waveform': waveform, 'label': self.build_sed_labels(waveform.shape[1], label, self.params)} 
+            label_sed, distance_sed = self.build_sed_labels(waveform.shape[1], label, self.params)
+            sample = {'filename': pathlib.Path(file_path).name, 'waveform': waveform, 'label': label_sed, 'distance': distance_sed} 
         sample.update(FeatureProcessor(self.params).read_features(file_path))             
         return sample
 
@@ -68,11 +70,14 @@ class FUSA_dataset(Dataset):
             audio_windows = n_samples // 320 +1 #PANN
         
         label = torch.zeros(audio_windows, len(self.categories))
+        distance = torch.zeros(audio_windows, len(self.categories))
         label_idx = self.le.transform(list(metadata['class'])).astype('int')
         start_norm, end_norm = (audio_windows/audio_seconds)*metadata[['start (s)', 'end (s)']].values.T
         start_idx = start_norm.astype('int')
         end_idx = end_norm.astype('int')
         for k, entity in enumerate(label_idx): # TODO: Make this more efficient
             label[start_idx[k]:end_idx[k], entity] = 1.
+            if 'distance' in metadata:
+                distance[start_idx[k]:end_idx[k], entity] = metadata['distance'].values[k]
         
-        return label
+        return label, distance

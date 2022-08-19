@@ -48,12 +48,12 @@ class Collate_and_transform:
         data_keys.remove('filename')
         for key in data_keys:
             if not self.resizer == 'none':
-                if key == 'label':
+                if key == 'label' or key == 'distance':
                     collate_dim = -2 
                 else:
                     collate_dim = -1
-                lens = [sample[key].size(collate_dim) for sample in batch]  
-                logger.debug(f"{self.resizer} {lens}")             
+                lens = [sample[key].size(collate_dim) for sample in batch]
+                logger.debug(f"{self.resizer} {lens}")
                 if self.resizer == 'pad':
                     for sample in batch:
                         sample[key] = append(sample[key], max(lens), collate_dim)
