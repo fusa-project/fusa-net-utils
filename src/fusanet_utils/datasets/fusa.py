@@ -67,7 +67,8 @@ class FUSA_dataset(Dataset):
         if 'mel_transform' in params:
             audio_windows = n_samples // params['mel_transform']['hop_length'] + 1  #ADAVANNE
         else:
-            audio_windows = n_samples // 320 +1 #PANN
+            #audio_windows = n_samples // 320 +1 #PANN
+            audio_windows = 1024 #HTS
         
         label = torch.zeros(audio_windows, len(self.categories))
         distance = torch.zeros(audio_windows, len(self.categories))
