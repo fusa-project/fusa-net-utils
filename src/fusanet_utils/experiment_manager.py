@@ -117,6 +117,32 @@ def criterion(label):
     else:
         return torch.nn.CrossEntropyLoss()
 
+class EarlyStopping():
+    def __init__(self, metric='valid_loss', patience=5):
+
+        self.metric = metric
+        if self.metric=='valid_loss':
+            self.best = np.Inf
+            self.metric_operator = np.less
+        elif self.metric == 'f1_score':
+            self.best = -np.Inf
+            self.metric_operator = np.greater
+        self.patience = patience
+        self.counter = 0
+        self.early_stop = False
+
+    def __call__(self, epoch, epoch_value):
+        if self.metric_operator(self.best, epoch_value):
+            self.counter +=1
+            logger.info(f"Early stopping counter: {self.counter}/{self.patience}")
+            if self.counter >= self.patience:
+                self.early_stop = True
+                logger.info(f"Training early stopped")
+        else:
+            self.best = epoch_value
+            self.counter = 0
+            logger.info(f"New best {self.metric} in epoch {epoch} ({self.best})")
+
 def train(loaders: Tuple, params: Dict, model_path: str, cuda: bool) -> None:
     """
     Make more abstract to other models
@@ -139,7 +165,8 @@ def train(loaders: Tuple, params: Dict, model_path: str, cuda: bool) -> None:
         device = 'cpu'
     logger.info(f'Using {device}')
 
-    best_metric = np.NINF
+    early_stopping = EarlyStopping(params["train"]["stopping_criteria"], params["train"]["patience"])
+    
     for epoch in range(params["train"]["nepochs"]):
         global_loss = 0.0
         global_accuracy = 0.0
@@ -196,6 +223,10 @@ def train(loaders: Tuple, params: Dict, model_path: str, cuda: bool) -> None:
         logger.info(f"{epoch}, valid/accuracy {global_accuracy/n_valid:0.4f}")
         logger.info(f"{epoch}, f1_score_macro {global_f1_score/len(valid_loader):0.4f}")
         logger.info(f"{epoch}, error_rate {global_error_rate/len(valid_loader):0.4f}")
+        if params["train"]["stopping_criteria"] == 'valid_loss':
+            early_stopping(epoch, global_loss/n_valid)
+        elif params["train"]["stopping_criteria"] == 'f1_score':
+            early_stopping(epoch, global_f1_score/len(valid_loader))
         live.log('valid/loss', global_loss/n_valid)
         live.log('valid/accuracy', global_accuracy/n_valid)
         live.log('f1_score_macro', global_f1_score/len(valid_loader))
@@ -203,17 +234,16 @@ def train(loaders: Tuple, params: Dict, model_path: str, cuda: bool) -> None:
         logger.info(f"valid time: {time.time() - start_time:0.4f} [s]")
         live.next_step()
 
-        #if global_loss < best_metric:
-            #logger.info(f"new best valid loss in epoch {epoch}!")
-        if global_f1_score > best_metric:
-            logger.info(f"new best f1_score in epoch {epoch}!")
+        #Saving best model
+        if early_stopping.early_stop:
+            break
+        else:
             if device == 'cuda':
                 model.cpu()
             torch.save(model, model_path)
             model.create_trace()
-            #best_metric = global_loss
-            best_metric = global_f1_score
 
+    
 def evaluate_model(dataset, params: Dict, model_path: str, label_dictionary: Dict) -> None:
     model = torch.load(model_path)
     model.cpu()
