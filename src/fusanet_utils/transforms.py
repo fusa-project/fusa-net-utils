@@ -20,7 +20,7 @@ class WhiteNoise(object):
         assert waveform.shape[0] == 1, "Only use for mono audio"
         signal_power = torch.sum(waveform**2)
         noise_power = signal_power/(10**snr)
-        noise = torch.randn_like(waveform)*noise_power
+        noise = torch.randn_like(waveform)*torch.sqrt(noise_power)
         noisy_waveform = waveform + noise
         sample['waveform'] = noisy_waveform/noisy_waveform.abs().amax()
         return sample
