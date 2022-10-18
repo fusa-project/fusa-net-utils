@@ -6,35 +6,6 @@ from typing import Dict, List
 
 logger = logging.getLogger(__name__)
 
-
-class WhiteNoise(object):
-
-    def __init__(self, SNR_min=-1, SNR_max=1):
-        self.SNR_min = SNR_min
-        self.SNR_max = SNR_max
-
-    def __call__(self, sample, snr=None):
-        waveform = sample['waveform']
-        if snr is None:  # Random from SNR range
-            snr = self.SNR_min + torch.rand(1).item()*(self.SNR_max - self.SNR_min)
-        assert waveform.shape[0] == 1, "Only use for mono audio"
-        signal_power = torch.sum(waveform**2)
-        noise_power = signal_power/(10**snr)
-        noise = torch.randn_like(waveform)*torch.sqrt(noise_power)
-        noisy_waveform = waveform + noise
-        sample['waveform'] = noisy_waveform/noisy_waveform.abs().amax()
-        return sample
-
-
-def test_white_noise():
-    waveform = torch.randn(1, 1000)
-    sample = {}
-    sample['waveform'] = waveform
-    sample['label'] = 'asd'
-    transformed_sample = WhiteNoise()(sample)
-    return transformed_sample
-
-
 def crop(data, target_length, collate_dim):
     if data.size(collate_dim) > target_length:
         if data.ndim == 2:
