@@ -100,7 +100,7 @@ def create_dataset(root_path, params: Dict, stage: str='train'):
     if 'Poliphonic-external' in params[stage]['dataset']:
         dataset.append(SimulatedPoliphonic(root_path, mini=False, external=True))
     # Create dataset for the experiment and save dictionary of classes index to names
-    return FUSA_dataset(ConcatDataset(dataset), feature_params=params["features"])
+    return FUSA_dataset(ConcatDataset(dataset), params)
 
 def create_dataloaders(dataset, params: Dict):
     train_size = int(params["train"]["train_percent"]*len(dataset))

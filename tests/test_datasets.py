@@ -45,7 +45,7 @@ def test_folder_dataset(mock_folder):
 def test_fusa_mock(mock_folder):
     params = default_logmel_parameters()
     dataset = FUSA_dataset(ConcatDataset([FolderDataset(mock_folder)]),
-                           feature_params=params["features"])
+                           params)
     assert len(dataset) == 2
     assert 'label' in dataset[0]
     assert dataset.label_int2string(dataset[0]['label'])[0] == "test_folder"
@@ -119,7 +119,7 @@ def test_esc(mock_esc50):
 def test_fusa_esc(mock_esc50):
     params = default_logmel_parameters()
     dataset = FUSA_dataset(ConcatDataset([ESC(mock_esc50)]),
-                           feature_params=params["features"])
+                           params)
     assert len(dataset) == 2
     assert 'label' in dataset[0]
     assert dataset.label_int2string(dataset[0]['label'])[0] == "animal/dog"
@@ -138,7 +138,7 @@ def test_fusa_esc(mock_esc50):
 def test_fusa_esc_collate_pad(mock_esc50):
     params = default_logmel_parameters()
     dataset = FUSA_dataset(ConcatDataset([ESC(mock_esc50)]),
-                           feature_params=params["features"])
+                           params)
     my_collate = Collate_and_transform(params['features'])
     loader = DataLoader(dataset,
                         shuffle=False,
@@ -152,7 +152,7 @@ def test_fusa_esc_collate_crop(mock_esc50):
     params = default_logmel_parameters()
     params['features']['collate_resize'] = 'crop'
     dataset = FUSA_dataset(ConcatDataset([ESC(mock_esc50)]),
-                           feature_params=params["features"])
+                           params)
     my_collate = Collate_and_transform(params['features'])
     loader = DataLoader(dataset,
                         shuffle=False,
@@ -167,7 +167,7 @@ def test_local_zscore_normalizer(mock_esc50):
     params = default_logmel_parameters()
 
     dataset = FUSA_dataset(ConcatDataset([ESC(mock_esc50)]),
-                           feature_params=params["features"])
+                           params)
 
     for sample in dataset:
         assert torch.allclose(torch.mean(sample['waveform']),
@@ -182,7 +182,7 @@ def test_local_minmax_normalizer(mock_esc50):
     params = default_logmel_parameters()
     params['features']['waveform_normalization']['type'] = 'minmax'
     dataset = FUSA_dataset(ConcatDataset([ESC(mock_esc50)]),
-                           feature_params=params["features"])
+                           params)
 
     for sample in dataset:
         assert torch.allclose(torch.min(sample['waveform']),
@@ -197,7 +197,7 @@ def test_global_zscore_normalizer(mock_esc50):
     params = default_logmel_parameters()
     params['features']['waveform_normalization']['scope'] = 'global'
     dataset = FUSA_dataset(ConcatDataset([ESC(mock_esc50)]),
-                           feature_params=params["features"])
+                           params)
 
     assert torch.allclose(dataset.global_normalizer.center,
                           torch.Tensor([0.0]),
@@ -212,7 +212,7 @@ def test_global_minmax_normalizer(mock_esc50):
     params['features']['waveform_normalization']['scope'] = 'global'
     params['features']['waveform_normalization']['type'] = 'minmax'
     dataset = FUSA_dataset(ConcatDataset([ESC(mock_esc50)]),
-                           feature_params=params["features"])
+                           params)
 
     assert torch.allclose(dataset.global_normalizer.center,
                           torch.Tensor([-0.5]),
@@ -228,7 +228,7 @@ def test_no_normalizer(mock_esc50):
     #params['features']['waveform_normalization']['type'] = 'none'
     params['features'].pop('waveform_normalization')
     dataset = FUSA_dataset(ConcatDataset([ESC(mock_esc50)]),
-                           feature_params=params["features"])
+                           params)
     sine_wave = dataset[0]['waveform']
     assert torch.allclose(torch.min(sine_wave),
                           torch.Tensor([-0.5]),
@@ -239,7 +239,7 @@ def test_no_normalizer(mock_esc50):
     params = default_logmel_parameters()
     params['features']['waveform_normalization']['scope'] = 'none'
     dataset = FUSA_dataset(ConcatDataset([ESC(mock_esc50)]),
-                           feature_params=params["features"])
+                           params)
     sine_wave = dataset[0]['waveform']
     assert torch.allclose(torch.min(sine_wave),
                           torch.Tensor([-0.5]),
