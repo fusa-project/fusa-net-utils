@@ -64,8 +64,13 @@ class FUSA_dataset(Dataset):
     def build_sed_labels(self, n_samples: int, metadata: Dict, params: Dict) -> torch.Tensor:
         sample_rate = params['features']['sampling_rate']
         audio_seconds = n_samples // sample_rate
+        try:
+            hop_length = params['features']['mel_transform']['hop_length']
+        except KeyError:
+            hop_length = 320
+            
         SED_MODEL_TYPE  = {
-            'ADAVANNE-sed': n_samples // params['mel_transform']['hop_length'] + 1,
+            'ADAVANNE-sed': n_samples // hop_length + 1,
             'HTS': 1024,
             'PANN-sed': n_samples // 320 + 1
         }
