@@ -161,3 +161,44 @@ class MMA(Dataset):
         
     def __len__(self) -> int:        
         return len(self.dataset)
+
+class SINGAPURA(Dataset):
+    
+    def __init__(self, repo_path: Union[str, Path]):
+        if isinstance(repo_path, str):
+            repo_path = Path(repo_path)
+        label_transforms = get_label_transforms(repo_path, "Singapura")
+        dataset_path = repo_path / 'datasets' / 'SINGAPURA'
+        self.singapura_classes = pd.read_json(dataset_path / "singapura_classes.json")
+        self.file_list, self.labels = [], []
+        self.categories = []
+        folder = Path(dataset_path / 'labels_public')
+        for file_path in list(folder.rglob('*.csv')):
+            df = pd.read_csv(file_path)
+            for file_name, metadata in df.groupby('filename'):
+                folder = (file_name.split('][')[1]).split('T')[0]
+                file_path = dataset_path / 'labelled' / folder / file_name
+                if not file_path.exists():
+                    logger.warning(f"El archivo {file_name} no existe")
+                    continue
+                self.file_list.append(file_path)
+            metadata = metadata[["event_label", "proximity", "onset", "offset"]]
+            metadata = metadata.rename(columns={"event_label":"class", "onset": "start (s)", "offset": "end (s)"})
+            metadata["class"] = metadata["class"].apply(lambda x: self.translate_classes(x))
+            label_exists = metadata["class"].apply(lambda label: label in label_transforms)
+            labels = metadata["class"].loc[label_exists].apply(lambda label: label_transforms[label])
+            metadata["class"] = labels
+            self.labels.append(metadata)
+            
+    def __getitem__(self, idx: int) -> Tuple[Path, pd.DataFrame]:
+        return (self.file_list[idx], self.labels[idx])
+
+    def __len__(self) -> int:
+        return len(self.file_list)
+    
+    def translate_classes(self, singapura_class):
+        category = int(singapura_class.split('-')[0])
+        subcategory = int(singapura_class.split('-')[1])
+        if category == 13 and subcategory == 2:
+            subcategory = 0
+        return self.singapura_classes[category][subcategory]
