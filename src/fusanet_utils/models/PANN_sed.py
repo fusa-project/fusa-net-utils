@@ -274,10 +274,6 @@ if __name__ == '__main__':
         dummy_audio = torch.randn(n_samples)
         pred = model({"waveform": dummy_audio.unsqueeze(0)})
         windows[n_samples] = pred.shape[1]
-        print(f"{n_samples//320 +1} {pred.shape[1]} {pred.shape[1] == n_samples//320 +1}")
-
-    import scipy.stats
-    print(scipy.stats.linregress(list(windows.keys()), list(windows.values())))
 
     import matplotlib.pyplot as plt
     fig, ax = plt.subplots(facecolor='w')

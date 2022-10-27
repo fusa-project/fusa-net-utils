@@ -27,9 +27,7 @@ def append(data, target_length, collate_dim):
             if collate_dim == -1:  # audio
                 data = pad(data, (0, append_length, 0, 0), mode='constant', value=0)
             elif collate_dim == -2:  # sed label
-                print(data.shape)
                 data = pad(data, (0, 0, 0, append_length), mode='constant', value=0)
-                print(data.shape)
         elif data.ndim == 3:  # spectrogram
             data = pad(data, (0, append_length, 0, 0, 0, 0), mode='constant', value=0)
         else:

@@ -140,10 +140,6 @@ if __name__ == '__main__':
         mel_transform = torch.randn([1, 1, 40, windows_number])
         pred = model({"mel_transform": mel_transform})
         windows[n_samples] = pred.shape[1]
-        print(f"{windows_number} {pred.shape[1]} {pred.shape[1] == windows_number}")
-
-    import scipy.stats
-    print(scipy.stats.linregress(list(windows.keys()), list(windows.values())))
 
     import matplotlib.pyplot as plt
     fig, ax = plt.subplots(facecolor='w')

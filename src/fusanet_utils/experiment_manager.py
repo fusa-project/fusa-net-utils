@@ -199,7 +199,6 @@ def train(loaders: Tuple, params: Dict, model_path: str, cuda: bool) -> None:
                 if key == 'waveform':
                     marshalled_batch[key] = marshalled_batch[key][:,:,:320002]
             optimizer.zero_grad()
-            print(type(marshalled_batch['label']), type(marshalled_batch['waveform']), type(marshalled_batch['distance']))
             y = model.forward(marshalled_batch)
             loss = criterion(marshalled_batch['label'])(y, marshalled_batch['label'])
             loss.backward()
