@@ -170,25 +170,28 @@ class SINGAPURA(Dataset):
         label_transforms = get_label_transforms(repo_path, "Singapura")
         dataset_path = repo_path / 'datasets' / 'SINGAPURA'
         self.singapura_classes = pd.read_json(dataset_path / "singapura_classes.json")
-        self.file_list, self.labels = [], []
-        self.categories = []
-        folder = Path(dataset_path / 'labels_public')
-        for file_path in list(folder.rglob('*.csv')):
+        self.file_list, self.labels, self.categories = [], [], []
+        meta_folder = Path(dataset_path / 'labels_public')
+        for file_path in list(meta_folder.rglob('*.csv')):
             df = pd.read_csv(file_path)
             for file_name, metadata in df.groupby('filename'):
                 folder = (file_name.split('][')[1]).split('T')[0]
                 file_path = dataset_path / 'labelled' / folder / file_name
-                if not file_path.exists():
-                    logger.warning(f"El archivo {file_name} no existe")
-                    continue
-                self.file_list.append(file_path)
+            if not file_path.exists():
+                logger.warning(f"El archivo {file_name} no existe")
+                continue
+            self.file_list.append(file_path)
             metadata = metadata[["event_label", "proximity", "onset", "offset"]]
             metadata = metadata.rename(columns={"event_label":"class", "onset": "start (s)", "offset": "end (s)"})
             metadata["class"] = metadata["class"].apply(lambda x: self.translate_classes(x))
-            label_exists = metadata["class"].apply(lambda label: label in label_transforms)
-            labels = metadata["class"].loc[label_exists].apply(lambda label: label_transforms[label])
-            metadata["class"] = labels
+            label_exists = metadata['class'].apply(lambda label: label in label_transforms)
+            metadata_rows = metadata.loc[label_exists]
+            metadata['class'] = metadata_rows['class'].loc[label_exists].apply(lambda label: label_transforms[label])
             self.labels.append(metadata)
+            
+            for i in range(len(self.labels)):
+                self.categories += list(self.labels[i]['class'])
+            self.categories = sorted(list(set(self.categories)))
             
     def __getitem__(self, idx: int) -> Tuple[Path, pd.DataFrame]:
         return (self.file_list[idx], self.labels[idx])

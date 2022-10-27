@@ -12,7 +12,7 @@ import pandas as pd
 from tqdm import tqdm
 
 from .transforms import Collate_and_transform
-from .datasets.external import ESC, UrbanSound8K, VitGlobal
+from .datasets.external import ESC, UrbanSound8K, VitGlobal, SINGAPURA
 from .datasets.fusa import FUSA_dataset
 from .datasets.simulated import SimulatedPoliphonic
 from .datasets.aumilab import AUMILAB
@@ -102,6 +102,8 @@ def create_dataset(root_path, params: Dict, stage: str='train'):
         dataset.append(SimulatedPoliphonic(root_path, mini=False, external=True))
     if 'AUMILAB' in params[stage]['dataset']:
         dataset.append(AUMILAB(root_path))
+    if 'SINGAPURA' in params[stage]['dataset']:
+        dataset.append(SINGAPURA(root_path))
     # Create dataset for the experiment and save dictionary of classes index to names
     return FUSA_dataset(ConcatDataset(dataset), params)
 

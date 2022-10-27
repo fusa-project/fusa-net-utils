@@ -1,15 +1,20 @@
+from curses import meta
 from pathlib import Path
 import logging
 from typing import Tuple, Union
 import pandas as pd
 from torch.utils.data import Dataset
+from .external import get_label_transforms
 
 logger = logging.getLogger(__name__)
 
 class AUMILAB(Dataset):
     
     def __init__(self, repo_path: Union[str, Path]):
-        self.file_list, self.labels = [], []
+        if isinstance(repo_path, str):
+            repo_path = Path(repo_path)
+        label_transforms = get_label_transforms(repo_path, "SPASS")
+        self.file_list, self.labels, self.categories = [], [], []
         dataset_path = repo_path / "datasets" / 'AUMILAB'
         df = pd.read_csv(dataset_path / 'metadata' / 'metadata1_4.txt', delim_whitespace=True)
         for file_name, metadata in df.groupby('filename'):
@@ -20,9 +25,15 @@ class AUMILAB(Dataset):
             self.file_list.append(file_path)
             metadata = metadata[["class", "start", "end"]]
             metadata = metadata.rename(columns={"end": "class", "start": "start (s)", "end": "end (s)"})
+                        
+            label_exists = metadata['class'].apply(lambda label: label in label_transforms)
+            metadata_rows = metadata.loc[label_exists]
+            metadata['class'] = metadata_rows['class'].loc[label_exists].apply(lambda label: label_transforms[label])
             self.labels.append(metadata)
-            self.categories = [list(self.labels[i]['class']) for i in range(len(self.labels))]
-            self.categories = sorted(list(set([c for category in self.categories for c in category])))
+            
+            for i in range(len(self.labels)):
+                self.categories += list(self.labels[i]['class'])
+            self.categories = sorted(list(set(self.categories)))        
             
     def __getitem__(self, idx: int) -> Tuple[Path, pd.DataFrame]:
         return (self.file_list[idx], self.labels[idx])
