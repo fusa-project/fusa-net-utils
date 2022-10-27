@@ -1,7 +1,7 @@
 from curses import meta
 from pathlib import Path
 import logging
-from typing import Tuple, Union
+from typing import Tuple, Union, List
 import pandas as pd
 from torch.utils.data import Dataset
 from .external import get_label_transforms
@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 class AUMILAB(Dataset):
     
-    def __init__(self, repo_path: Union[str, Path]):
+    def __init__(self, repo_path: Union[str, Path], categories: List=None):
         if isinstance(repo_path, str):
             repo_path = Path(repo_path)
         label_transforms = get_label_transforms(repo_path, "SPASS")
@@ -31,9 +31,14 @@ class AUMILAB(Dataset):
             metadata['class'] = metadata_rows['class'].loc[label_exists].apply(lambda label: label_transforms[label])
             self.labels.append(metadata)
             
-            for i in range(len(self.labels)):
-                self.categories += list(self.labels[i]['class'])
-            self.categories = sorted(list(set(self.categories)))        
+            # Find number of classes
+            if categories is None:
+                for i in range(len(self.labels)):
+                    self.categories += list(self.labels[i]['class'])
+                self.categories = sorted(list(set(self.categories)))
+            else:
+                self.categories = categories
+            self.categories = sorted(list(set(self.categories)))     
             
     def __getitem__(self, idx: int) -> Tuple[Path, pd.DataFrame]:
         return (self.file_list[idx], self.labels[idx])
