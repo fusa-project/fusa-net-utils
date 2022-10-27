@@ -12,6 +12,7 @@ import pandas as pd
 from tqdm import tqdm
 
 from .transforms import Collate_and_transform
+from .augmentations.additive_noise import PinkNoise, WhiteNoise
 from .datasets.external import ESC, UrbanSound8K, VitGlobal, SINGAPURA
 from .datasets.fusa import FUSA_dataset
 from .datasets.simulated import SimulatedPoliphonic
@@ -111,9 +112,18 @@ def create_dataloaders(dataset, params: Dict):
     train_size = int(params["train"]["train_percent"]*len(dataset))
     valid_size = len(dataset) - train_size
     train_subset, valid_subset = random_split(dataset, (train_size, valid_size), generator=torch.Generator().manual_seed(params["train"]["random_seed"]))
-    my_collate = Collate_and_transform(params['features'])
-    train_loader = DataLoader(train_subset, shuffle=True, batch_size=params["train"]["batch_size"], collate_fn=my_collate, num_workers=4, pin_memory=True)
-    valid_loader = DataLoader(valid_subset, batch_size=8, collate_fn=my_collate, num_workers=4, pin_memory=True)
+    if 'augmentation' in params['train']:
+        if params['train']['augmentation'] is None:
+            train_collate = Collate_and_transform(params['features'])
+        elif params['train']['augmentation'] == 'pink':
+            train_collate = Collate_and_transform(params['features'], transforms=[PinkNoise()])
+        elif params['train']['augmentation'] == 'white':
+            train_collate = Collate_and_transform(params['features'], transforms=[WhiteNoise()])
+    else:
+        train_collate = Collate_and_transform(params['features'])
+    valid_collate = Collate_and_transform(params['features'])
+    train_loader = DataLoader(train_subset, shuffle=True, batch_size=params["train"]["batch_size"], collate_fn=train_collate, num_workers=4, pin_memory=True)
+    valid_loader = DataLoader(valid_subset, batch_size=8, collate_fn=valid_collate, num_workers=4, pin_memory=True)
     return train_loader, valid_loader
 
 def criterion(label):
@@ -189,6 +199,7 @@ def train(loaders: Tuple, params: Dict, model_path: str, cuda: bool) -> None:
                 if key == 'waveform':
                     marshalled_batch[key] = marshalled_batch[key][:,:,:320002]
             optimizer.zero_grad()
+            print(type(marshalled_batch['label']), type(marshalled_batch['waveform']), type(marshalled_batch['distance']))
             y = model.forward(marshalled_batch)
             loss = criterion(marshalled_batch['label'])(y, marshalled_batch['label'])
             loss.backward()

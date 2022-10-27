@@ -8,6 +8,8 @@ def default_params():
     params['features']['waveform_normalization'] = {}
     params['features']['waveform_normalization']['scope'] = 'local' # local, global
     params['features']['waveform_normalization']['type'] = 'zscore' 
+    params['train'] = {}
+    params['train']['augmentation'] = None
     return params
 
 def default_logmel_parameters(): 

@@ -45,7 +45,7 @@ class PinkNoise(Noise):
     def generate_noise(self, n_samples: int, random_state=None) -> torch.Tensor:
         noise = cn.powerlaw_psd_gaussian(exponent=1.0, size=n_samples, fmin=0,
                                          random_state=random_state)
-        return torch.from_numpy(noise).reshape(1, -1)
+        return torch.from_numpy(noise).reshape(1, -1).to(dtype=torch.float32)
 
 
 class RedNoise(Noise):
@@ -53,7 +53,7 @@ class RedNoise(Noise):
     def generate_noise(self, n_samples: int, random_state=None) -> torch.Tensor:
         noise = cn.powerlaw_psd_gaussian(exponent=2.0, size=n_samples, fmin=0,
                                          random_state=random_state)
-        return torch.from_numpy(noise).reshape(1, -1)
+        return torch.from_numpy(noise).reshape(1, -1).to(dtype=torch.float32)
 
 
 def test_white_noise():
