@@ -39,7 +39,7 @@ class WhiteNoise(Noise):
 
 
 class PinkNoise(Noise):
-    def __init__(self, SNR_min=20, SNR_max=100, snr=None):
+    def __init__(self, SNR_min=0, SNR_max=100, snr=None):
         super().__init__(SNR_min=SNR_min, SNR_max=SNR_max, snr=snr)
 
     def generate_noise(self, n_samples: int, random_state=None) -> torch.Tensor:
