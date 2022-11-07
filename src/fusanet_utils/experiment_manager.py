@@ -6,6 +6,8 @@ import pathlib
 import numpy as np
 import torch
 from torch.utils.data import DataLoader, random_split, ConcatDataset
+from torchsampler import ImbalancedDatasetSampler
+
 from sklearn.metrics import classification_report
 from dvclive import Live
 import pandas as pd
@@ -122,7 +124,7 @@ def create_dataloaders(dataset, params: Dict):
     else:
         train_collate = Collate_and_transform(params['features'])
     valid_collate = Collate_and_transform(params['features'])
-    train_loader = DataLoader(train_subset, shuffle=True, batch_size=params["train"]["batch_size"], collate_fn=train_collate, num_workers=4, pin_memory=True)
+    train_loader = DataLoader(train_subset, sampler=ImbalancedDatasetSampler(train_subset), shuffle=True, batch_size=params["train"]["batch_size"], collate_fn=train_collate, num_workers=4, pin_memory=True)
     valid_loader = DataLoader(valid_subset, batch_size=8, collate_fn=valid_collate, num_workers=4, pin_memory=True)
     return train_loader, valid_loader
 
