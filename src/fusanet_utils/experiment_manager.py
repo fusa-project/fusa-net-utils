@@ -193,8 +193,6 @@ def train(loaders: Tuple, params: Dict, model_path: str, cuda: bool) -> None:
         for batch in train_loader:
             marshalled_batch = {}
             for key in batch:
-                #if key == 'label':
-                #    batch[key] = torch.zeros(len(batch[key]), n_classes).scatter_(1, batch[key].unsqueeze(1), 1.)
                 if key == 'filename':
                     continue
                 marshalled_batch[key] = batch[key].to(device, non_blocking=True)
@@ -223,8 +221,6 @@ def train(loaders: Tuple, params: Dict, model_path: str, cuda: bool) -> None:
             for batch in valid_loader:
                 marshalled_batch = {}
                 for key in batch:
-                    #if key == 'label':
-                    #    batch[key] = torch.zeros(len(batch[key]), n_classes).scatter_(1, batch[key].unsqueeze(1), 1.)
                     if key == 'filename':
                         continue
                     marshalled_batch[key] = batch[key].to(device, non_blocking=True)
