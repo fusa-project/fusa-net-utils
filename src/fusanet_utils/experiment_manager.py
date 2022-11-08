@@ -183,7 +183,7 @@ def train(loaders: Tuple, params: Dict, model_path: str, cuda: bool) -> None:
     logger.info(f'Using {device}')
 
     early_stopping = EarlyStopping(params["train"]["stopping_criteria"], params["train"]["patience"])
-    
+    clip = 10.0
     for epoch in range(params["train"]["nepochs"]):
         global_loss = 0.0
         global_accuracy = 0.0
@@ -202,6 +202,7 @@ def train(loaders: Tuple, params: Dict, model_path: str, cuda: bool) -> None:
             y = model.forward(marshalled_batch)
             loss = criterion(marshalled_batch['label'])(y, marshalled_batch['label'])
             loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), clip)
             optimizer.step()
             global_loss += loss.item()
             global_accuracy += accuracy(y, marshalled_batch['label'])
