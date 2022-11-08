@@ -16,7 +16,7 @@ class AUMILAB(Dataset):
         label_transforms = get_label_transforms(repo_path, "SPASS")
         self.file_list, self.labels, self.categories = [], [], []
         dataset_path = repo_path / "datasets" / 'AUMILAB'
-        df = pd.read_csv(dataset_path / 'metadata' / 'metadata1_4.txt', delim_whitespace=True)
+        df = pd.read_csv(dataset_path / 'metadata' / 'metadata.txt', delim_whitespace=True)
         for file_name, metadata in df.groupby('filename'):
             file_path = dataset_path / 'audios' / file_name
             if not file_path.exists():
