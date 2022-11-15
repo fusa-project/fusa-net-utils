@@ -103,7 +103,7 @@ def create_dataset(root_path, params: Dict, stage: str='train'):
     if 'Poliphonic-external' in params[stage]['dataset']:
         dataset.append(SimulatedPoliphonic(root_path, mini=False, external=True))
     if 'AUMILAB' in params[stage]['dataset']:
-        dataset.append(AUMILAB(root_path))
+        dataset.append(AUMILAB(root_path, None, True))
     if 'SINGAPURA' in params[stage]['dataset']:
         dataset.append(SINGAPURA(root_path))
     # Create dataset for the experiment and save dictionary of classes index to names
