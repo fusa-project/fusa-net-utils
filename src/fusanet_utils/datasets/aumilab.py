@@ -25,7 +25,7 @@ class AUMILAB(Dataset):
                 logger.warning(f"El archivo {file_name} no existe")
                 continue
             self.file_list.append(file_path)
-            metadata = metadata[["label", "start", "end"]]
+            metadata = metadata[["label", "start", "end", "station"]]
             metadata = metadata.rename(columns={"label": "class",
                                                 "start": "start (s)",
                                                 "end": "end (s)"})
