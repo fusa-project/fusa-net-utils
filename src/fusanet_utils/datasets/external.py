@@ -169,7 +169,7 @@ class SINGAPURA(Dataset):
             repo_path = Path(repo_path)
         label_transforms = get_label_transforms(repo_path, "Singapura")
         dataset_path = repo_path / 'datasets' / 'SINGAPURA'
-        self.singapura_classes = pd.read_json(dataset_path / "singapura_classes.json")
+        singapura_classes = pd.read_json(dataset_path / "singapura_classes.json")
         self.file_list, self.labels, self.categories = [], [], []
         meta_folder = Path(dataset_path / 'labels_public')
         for file_path in list(meta_folder.rglob('*.csv')):
@@ -183,7 +183,7 @@ class SINGAPURA(Dataset):
             self.file_list.append(file_path)
             metadata = metadata[["event_label", "proximity", "onset", "offset"]]
             metadata = metadata.rename(columns={"event_label":"class", "onset": "start (s)", "offset": "end (s)"})
-            metadata["class"] = metadata["class"].apply(lambda x: self.translate_classes(x))
+            metadata["class"] = metadata["class"].apply(lambda x: self.translate_classes(singapura_classes, x))
             label_exists = metadata['class'].apply(lambda label: label in label_transforms)
             metadata_rows = metadata.loc[label_exists]
             metadata['class'] = metadata_rows['class'].loc[label_exists].apply(lambda label: label_transforms[label])
@@ -204,9 +204,9 @@ class SINGAPURA(Dataset):
     def __len__(self) -> int:
         return len(self.file_list)
     
-    def translate_classes(self, singapura_class):
+    def translate_classes(self, singapura_classes, singapura_class):
         category = int(singapura_class.split('-')[0])
         subcategory = int(singapura_class.split('-')[1])
         if category == 13 and subcategory == 2:
             subcategory = 0
-        return self.singapura_classes[category][subcategory]
+        return singapura_classes[category][subcategory]
