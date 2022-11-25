@@ -1,20 +1,26 @@
 import logging
 import torch
+import numpy as np
 from torch import Tensor
 from torch.nn.functional import pad
 from typing import Dict, List
 
 logger = logging.getLogger(__name__)
 
-def crop(data, target_length, collate_dim):
-    if data.size(collate_dim) > target_length:
+
+def crop(data, target_length, collate_dim, random=False):
+    data_length = data.size(collate_dim)
+    if data_length > target_length:
+        start_idx = 0
+        if random:
+            start_idx = np.random.randint(data_length - target_length)
         if data.ndim == 2:
             if collate_dim == -1:  # audio
-                data = data[:, :target_length]
+                data = data[:, start_idx:start_idx+target_length]
             elif collate_dim == -2:  # sed label
-                data = data[:target_length, :]
+                data = data[start_idx:start_idx+target_length, :]
         elif data.ndim == 3:  # spectrogram
-            data = data[:, :, :target_length]
+            data = data[:, :, start_idx:start_idx+target_length]
         else:
             raise NotImplementedError("Only 3D o 4D tensors accepted")
     return data
@@ -48,10 +54,9 @@ class Collate_and_transform:
         data_keys.remove('filename')
         for key in data_keys:
             if not self.resizer == 'none':
+                collate_dim = -1
                 if key == 'label' or key == 'distance':
                     collate_dim = -2
-                else:
-                    collate_dim = -1
                 lens = [sample[key].size(collate_dim) for sample in batch]
                 logger.debug(f"{self.resizer} {lens}")
                 if self.resizer == 'pad':
@@ -60,6 +65,11 @@ class Collate_and_transform:
                 elif self.resizer == 'crop':
                     for sample in batch:
                         sample[key] = crop(sample[key], min(lens), collate_dim)
+                elif self.resizer == 'random-crop':
+                    for sample in batch:
+                        sample[key] = crop(sample[key], min(lens), collate_dim, random=True)
+                elif self.resizer == '5s':
+                    pass
         # Data augmentation transforms
         transformed_batch = []
         for sample in batch:
