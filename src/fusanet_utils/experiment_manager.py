@@ -114,6 +114,7 @@ def create_dataloaders(dataset, params: Dict):
     train_size = int(params["train"]["train_percent"]*len(dataset))
     valid_size = len(dataset) - train_size
     train_subset, valid_subset = random_split(dataset, (train_size, valid_size), generator=torch.Generator().manual_seed(params["train"]["random_seed"]))
+    train_collate = Collate_and_transform(params['features'])
     if 'augmentation' in params['train']:
         if params['train']['augmentation'] is None:
             train_collate = Collate_and_transform(params['features'])
@@ -121,21 +122,18 @@ def create_dataloaders(dataset, params: Dict):
             train_collate = Collate_and_transform(params['features'], transforms=[PinkNoise()])
         elif params['train']['augmentation'] == 'white':
             train_collate = Collate_and_transform(params['features'], transforms=[WhiteNoise()])
-    else:
-        train_collate = Collate_and_transform(params['features'])
     valid_collate = Collate_and_transform(params['features'])
+    train_loader = DataLoader(train_subset, shuffle=True,
+                              batch_size=params["train"]["batch_size"],
+                              collate_fn=train_collate, num_workers=4, pin_memory=True)
     if 'balanced' in params['train']:
-        train_loader = DataLoader(train_subset, 
-                                  sampler=ImbalancedDatasetSampler(train_subset,
-                                                                   labels=[sample['label'].item() for sample in train_subset]
-                                                                   ),
-                                  batch_size=params["train"]["batch_size"],
-                                  collate_fn=train_collate, num_workers=4, pin_memory=True)
-    else:
-        train_loader = DataLoader(train_subset,
-                                  shuffle=True,
-                                  batch_size=params["train"]["batch_size"],
-                                  collate_fn=train_collate, num_workers=4, pin_memory=True)
+        if params['train']['balanced']:
+            train_loader = DataLoader(train_subset, 
+                                    sampler=ImbalancedDatasetSampler(train_subset,
+                                                                    labels=[sample['label'].item() for sample in train_subset]
+                                                                    ),
+                                    batch_size=params["train"]["batch_size"],
+                                    collate_fn=train_collate, num_workers=4, pin_memory=True)
     valid_loader = DataLoader(valid_subset, batch_size=8, collate_fn=valid_collate, num_workers=4, pin_memory=True)
     return train_loader, valid_loader
 
