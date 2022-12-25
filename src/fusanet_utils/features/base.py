@@ -1,6 +1,5 @@
 import logging
 from abc import ABC, abstractmethod
-from os.path import isfile, splitext
 import pathlib
 import torch
 
@@ -10,11 +9,11 @@ logger = logging.getLogger(__name__)
 
 
 class Feature(ABC):
-    
+
     def __init__(self, params):
         self.params = params
         super().__init__()
-    
+
     @abstractmethod
     def compute(self, waveform: torch.Tensor):
         pass
@@ -29,10 +28,10 @@ class Feature(ABC):
         pos_path = pathlib.Path(*waveform_path.parts[-k:-1])
         (pre_path / "features" / pos_path).mkdir(parents=True, exist_ok=True)
         return pre_path / "features" / pos_path / file_name
-    
+
     def write_to_disk(self, waveform_path: str, global_normalizer = None) -> None:
         feature_path = self.create_path(pathlib.Path(waveform_path))
-        if not feature_path.exists() or self.params["overwrite"]: 
+        if not feature_path.exists() or self.params["overwrite"]:
             logger.debug(f"Writing features for {waveform_path}")
             waveform =  get_waveform(waveform_path, self.params, global_normalizer)
             feature = self.compute(waveform)
@@ -44,4 +43,3 @@ class Feature(ABC):
             return torch.load(feature_path)
         else:
             raise FileNotFoundError("Feature file not found")
-
