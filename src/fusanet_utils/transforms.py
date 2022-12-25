@@ -1,7 +1,6 @@
 import logging
 import torch
 import numpy as np
-from torch import Tensor
 from torch.nn.functional import pad
 from typing import Dict, List
 
@@ -26,12 +25,16 @@ def crop(data, target_length, collate_dim, random=False):
     return data
 
 
-def append(data, target_length, collate_dim):
-    if data.size(collate_dim) < target_length:
-        append_length = target_length-data.size(collate_dim)
+def append(data, target_length, collate_dim, random=False):
+    data_length = data.size(collate_dim)
+    if data_length < target_length:
+        start_idx = 0
+        append_length = target_length - data_length
+        if random:
+            start_idx = np.random.randint(append_length)
         if data.ndim == 2:
             if collate_dim == -1:  # audio
-                data = pad(data, (0, append_length, 0, 0), mode='constant', value=0)
+                data = pad(data, (start_idx, append_length-start_idx, 0, 0), mode='constant', value=0)
             elif collate_dim == -2:  # sed label
                 data = pad(data, (0, 0, 0, append_length), mode='constant', value=0)
         elif data.ndim == 3:  # spectrogram
@@ -46,6 +49,7 @@ class Collate_and_transform:
     def __init__(self, params: Dict, transforms: List = []):
         self.transforms = transforms
         self.resizer = params['collate_resize']
+        self.rate = params['sampling_rate']
 
     def __call__(self, batch: List[Dict]) -> Dict:
         data_keys = list(batch[0].keys())
@@ -68,8 +72,14 @@ class Collate_and_transform:
                 elif self.resizer == 'random-crop':
                     for sample in batch:
                         sample[key] = crop(sample[key], min(lens), collate_dim, random=True)
-                elif self.resizer == '5s':
-                    pass
+                elif self.resizer == 'adaptive-5s':
+                    for sample in batch:
+                        if sample['waveform'].shape[-1] > self.rate*5:
+                            sample[key] = crop(sample[key], self.rate*5,
+                                               collate_dim, random=True)
+                        else:
+                            sample[key] = append(sample[key], self.rate*5,
+                                                 collate_dim, random=True)
         # Data augmentation transforms
         transformed_batch = []
         for sample in batch:
