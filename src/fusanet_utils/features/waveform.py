@@ -8,6 +8,7 @@ from .waveform_backends import read_pydub, read_soundfile
 
 logger = logging.getLogger(__name__)
 
+
 def get_waveform(file: Union[str, pathlib.Path, bytes, bytearray], params: Dict, global_normalizer=None) -> torch.Tensor:
     if isinstance(file, bytes) or  isinstance(file, bytearray):
         file = io.BytesIO(file)

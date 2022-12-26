@@ -6,6 +6,11 @@ from .base import Feature
 from .global_normalizer import Global_normalizer
 
 
+class WaveForm(Feature):
+    def compute(self, waveform: torch.Tensor):
+        return waveform
+
+
 class LogMel(Feature):
     def compute(self, waveform: torch.Tensor) -> torch.Tensor:
         sample_rate = self.params["sampling_rate"]
@@ -23,7 +28,7 @@ class LogMel(Feature):
 
 
 class FeatureProcessor():
-    def __init__(self, params: Dict = {}, normalizer: Global_normalizer = None):
+    def __init__(self, params: Dict = {}, normalizer: Global_normalizer=None):
         self.params = params
         self.normalizer = normalizer
         self.processors = self.__find_processors()
@@ -31,6 +36,7 @@ class FeatureProcessor():
     def __find_processors(self) -> Dict:
         # Update this to add new features
         processors = {}
+        processors['waveform'] = WaveForm(self.params)
         if 'mel_transform' in self.params:
             processors['mel_transform'] = LogMel(self.params)
         if 'mfcc_transform' in self.params:
@@ -58,3 +64,4 @@ class FeatureProcessor():
         for feature_name, processor in self.processors.items():
             sample[feature_name] = processor.read_from_disk(waveform_path)
         return sample
+

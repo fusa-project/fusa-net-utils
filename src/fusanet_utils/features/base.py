@@ -33,7 +33,7 @@ class Feature(ABC):
         feature_path = self.create_path(pathlib.Path(waveform_path))
         if not feature_path.exists() or self.params["overwrite"]:
             logger.debug(f"Writing features for {waveform_path}")
-            waveform =  get_waveform(waveform_path, self.params, global_normalizer)
+            waveform = get_waveform(waveform_path, self.params, global_normalizer)
             feature = self.compute(waveform)
             torch.save(feature, feature_path)
 
