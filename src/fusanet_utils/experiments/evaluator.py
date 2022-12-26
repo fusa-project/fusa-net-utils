@@ -1,28 +1,44 @@
 import numpy as np
 import pandas as pd
 from sklearn.metrics import classification_report
+import logging
 import torch
 from tqdm import tqdm
-from torch.utils.data import DataLoader
-from ..transforms import Collate_and_transform
+
+logger = logging.getLogger(__name__)
 
 
-def evaluate_model(dataset, params: dict, model_path: str,
+def evaluate_model(loaders: tuple, params: dict, model_path: str,
                    label_dictionary: dict) -> None:
+
+    train_loader, valid_loader = loaders
+
+    # n_train, n_valid = len(train_loader.dataset), len(valid_loader.dataset)
     model = torch.load(model_path)
-    model.cpu()
+    cuda = params['evaluate']['cuda']
+    if cuda and torch.cuda.device_count() > 0:
+        logger.info('GPU number: {}'.format(torch.cuda.device_count()))
+        device = 'cuda'
+        torch.backends.cudnn.benchmark = True
+    else:
+        device = 'cpu'
+    logger.info(f'Using {device}')
+    model.to(device)
+
     model.eval()
     names, predictions, labels = [], [], []
     preds_str, label_str = [], []
 
-    my_collate = Collate_and_transform(params['features'])
-    loader = DataLoader(dataset, batch_size=8, collate_fn=my_collate,
-                        num_workers=4, pin_memory=True)
     with torch.no_grad():
-        for batch in tqdm(loader):
+        for batch in tqdm(valid_loader):
             names.append(batch['filename'])
-            predictions.append(model.forward(batch).argmax(dim=1).numpy())
             labels.append(batch['label'].numpy())
+            marshalled_batch = {}
+            for key in batch:
+                if key == 'filename':
+                    continue
+                marshalled_batch[key] = batch[key].to(device, non_blocking=True)
+            predictions.append(model.forward(marshalled_batch).argmax(dim=1).cpu().numpy())
             preds_str += [label_dictionary[str(prediction)] for prediction in predictions[-1]]
             label_str += [label_dictionary[str(label)] for label in labels[-1]]
     names = np.concatenate(names)

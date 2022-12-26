@@ -135,14 +135,20 @@ def train_model(loaders: tuple, params: dict, model_path: str) -> None:
             live.log_metric('f1_score_macro', global_f1_score/len(valid_loader))
             live.log_metric('error_rate', global_error_rate/len(valid_loader))
             logger.info(f"valid time: {time.time() - start_time:0.4f} [s]")
-            live.next_step()
 
             # Saving best model
             if early_stopping.early_stop:
                 break
             else:
+                live.log_metric('best_epoch', epoch)
+                live.log_metric('valid/best_loss', global_loss/n_valid)
+                live.log_metric('valid/best_accuracy', global_accuracy/n_valid)
+                live.log_metric('best_f1_score_macro', global_f1_score/len(valid_loader))
+                live.log_metric('best_error_rate', global_error_rate/len(valid_loader))
+
                 if device == 'cuda':
                     model.cpu()
                 torch.save(model, model_path)
                 #model.create_trace()
+            live.next_step()
 
