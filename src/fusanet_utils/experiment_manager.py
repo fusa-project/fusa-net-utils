@@ -29,7 +29,7 @@ from .metrics import accuracy, f1_score, error_rate
 logger = logging.getLogger(__name__)
 
 
-def initialize_model(model_path: str, params: Dict, n_classes: int, cuda: bool, pretrained: bool):
+def initialize_model(model_path: str, params: Dict, n_classes: int, cuda: bool, finetuning: bool):
     pretrained_cache = pathlib.Path("../../pretrained_models")
     if  params['model'] == 'naive':
         model = ConvolutionalNaive(n_classes=n_classes)
@@ -43,7 +43,7 @@ def initialize_model(model_path: str, params: Dict, n_classes: int, cuda: bool, 
             fmin=50,
             fmax=14000
             )
-        if pretrained:
+        if finetuning:
             if cuda:
                 checkpoint = torch.load(pretrained_cache / 'Wavegram_Logmel_Cnn14_mAP=0.439.pth')
             else:
@@ -63,15 +63,21 @@ def initialize_model(model_path: str, params: Dict, n_classes: int, cuda: bool, 
             fmin=50,
             fmax=14000
             )
-        if pretrained:
+        if finetuning:
             if cuda:
-                checkpoint = torch.load(pretrained_cache / 'Cnn14_DecisionLevelAtt_mAP=0.425.pth')
+                #checkpoint = torch.load(pretrained_cache / 'Cnn14_DecisionLevelAtt_mAP=0.425.pth')
+                model = torch.load(pretrained_cache / 'Poliphonic-PANN-sed-pink-noise-clipping-2.pt')
             else:
-                checkpoint = torch.load(pretrained_cache / 'Cnn14_DecisionLevelAtt_mAP=0.425.pth', map_location=torch.device('cpu'))
-            model.load_state_dict(checkpoint['model'])
+                #checkpoint = torch.load(pretrained_cache / 'Cnn14_DecisionLevelAtt_mAP=0.425.pth', map_location=torch.device('cpu'))
+                model = torch.load(pretrained_cache / 'Poliphonic-PANN-sed-pink-noise-clipping-2.pt', map_location=torch.device('cpu'))
             for param in model.parameters():
                 param.requires_grad = False
-        model.fc1 = torch.nn.Sequential(torch.nn.Linear(2048, 1024), torch.nn.Linear(1024, 512), torch.nn.Linear(512, 512))
+        #last layer changes
+        model.fc1 = torch.nn.Sequential(
+            torch.nn.Linear(2048, 1024, bias=True),
+            torch.nn.Linear(1024, 512, bias=True),
+            torch.nn.Linear(512, 512, bias=True)
+        )
         model.att_block = AttBlock(512, n_classes, activation='sigmoid')
     elif params['model'] == 'ADAVANNE-sed':
         model = SEDnet(n_classes=n_classes)
@@ -85,7 +91,6 @@ def initialize_model(model_path: str, params: Dict, n_classes: int, cuda: bool, 
             fmin=50,
             fmax=14000
         )
-
     torch.save(model, model_path)
 
 def create_dataset(root_path, params: Dict, stage: str='train'):
@@ -111,10 +116,17 @@ def create_dataset(root_path, params: Dict, stage: str='train'):
     return FUSA_dataset(ConcatDataset(dataset), params)
 
 def create_dataloaders(dataset, params: Dict):
-    train_size = int(params["train"]["train_percent"]*len(dataset))
-    valid_size = len(dataset) - train_size
-    train_subset, valid_subset = random_split(dataset, (train_size, valid_size), generator=torch.Generator().manual_seed(params["train"]["random_seed"]))
+    if 'ft_percent' in params['train']:
+        train_size = int(params["train"]["train_percent"]*len(dataset) * params["train"]["ft_percent"])
+        valid_size = int(len(dataset)* params["train"]["ft_percent"]) - train_size
+        test_size = len(dataset) - train_size - valid_size
+    else:
+        train_size = int(params["train"]["train_percent"]*len(dataset))
+        valid_size = len(dataset) - train_size
+        test_size = 0
+    #train_subset, valid_subset = random_split(dataset, (train_size, valid_size), generator=torch.Generator().manual_seed(params["train"]["random_seed"]))
     train_collate = Collate_and_transform(params['features'])
+    train_subset, valid_subset, test_subset = random_split(dataset, (train_size, valid_size, test_size), generator=torch.Generator().manual_seed(params["train"]["random_seed"]))
     if 'augmentation' in params['train']:
         if params['train']['augmentation'] is None:
             train_collate = Collate_and_transform(params['features'])
@@ -123,6 +135,7 @@ def create_dataloaders(dataset, params: Dict):
         elif params['train']['augmentation'] == 'white':
             train_collate = Collate_and_transform(params['features'], transforms=[WhiteNoise()])
     valid_collate = Collate_and_transform(params['features'])
+    test_collate = Collate_and_transform(params['features'])
     train_loader = DataLoader(train_subset, shuffle=True,
                               batch_size=params["train"]["batch_size"],
                               collate_fn=train_collate, num_workers=4, pin_memory=True)
@@ -135,7 +148,8 @@ def create_dataloaders(dataset, params: Dict):
                                     batch_size=params["train"]["batch_size"],
                                     collate_fn=train_collate, num_workers=4, pin_memory=True)
     valid_loader = DataLoader(valid_subset, batch_size=8, collate_fn=valid_collate, num_workers=4, pin_memory=True)
-    return train_loader, valid_loader
+    test_loader = DataLoader(test_subset, batch_size=8, collate_fn=test_collate, num_workers=4, pin_memory=True)
+    return train_loader, valid_loader, test_loader
 
 def criterion(label):
     if label.ndim == 3: # SED
@@ -174,7 +188,8 @@ def train(loaders: Tuple, params: Dict, model_path: str, cuda: bool) -> None:
     Make more abstract to other models
     """
     live = Live()
-    train_loader, valid_loader = loaders
+    train_loader, valid_loader, test_loader = loaders
+    torch.save(test_loader, 'test_dataloader.pt')
 
     n_train, n_valid = len(train_loader.dataset), len(valid_loader.dataset)
     model = torch.load(model_path)
@@ -207,6 +222,9 @@ def train(loaders: Tuple, params: Dict, model_path: str, cuda: bool) -> None:
                 marshalled_batch[key] = batch[key].to(device, non_blocking=True)
                 if key == 'waveform':
                     marshalled_batch[key] = marshalled_batch[key][:,:,:320002]
+                    if 'SINGAPURA' in params["train"]["dataset"]:
+                        amplifier = 10
+                        marshalled_batch[key] = marshalled_batch[key] * amplifier
             optimizer.zero_grad()
             y = model.forward(marshalled_batch)
             loss = criterion(marshalled_batch['label'])(y, marshalled_batch['label'])
@@ -236,6 +254,9 @@ def train(loaders: Tuple, params: Dict, model_path: str, cuda: bool) -> None:
                     marshalled_batch[key] = batch[key].to(device, non_blocking=True)
                     if key == 'waveform':
                         marshalled_batch[key] = marshalled_batch[key][:,:,:320002]
+                        if 'SINGAPURA' in params["train"]["dataset"]:
+                            amplifier = 10
+                            marshalled_batch[key] = marshalled_batch[key] * amplifier
                 y = model.forward(marshalled_batch)
                 loss = criterion(marshalled_batch['label'])(y, marshalled_batch['label'])
                 global_loss += loss.item()
@@ -265,7 +286,6 @@ def train(loaders: Tuple, params: Dict, model_path: str, cuda: bool) -> None:
                 model.cpu()
             torch.save(model, model_path)
             model.create_trace()
-
     
 def evaluate_model(dataset, params: Dict, model_path: str, label_dictionary: Dict) -> None:
     model = torch.load(model_path)
