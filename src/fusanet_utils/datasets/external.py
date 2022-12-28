@@ -17,6 +17,7 @@ def get_label_transforms(repo_path: Union[Path, str], dataset_name: str) -> Dict
             transforms[value] = key
     return transforms
 
+
 class FolderDataset(Dataset):
 
     def __init__(self, folder_path: Union[str, Path], label_transforms: Dict=None, allowed_extensions = ['.wav', '.mp3', '.m4a', '.ogg']):
@@ -183,20 +184,17 @@ class SINGAPURA(Dataset):
             self.file_list.append(file_path)
             metadata = metadata[["event_label", "proximity", "onset", "offset"]]
             metadata = metadata.rename(columns={"event_label":"class", "onset": "start (s)", "offset": "end (s)"})
+            
             metadata["class"] = metadata["class"].apply(lambda x: self.translate_classes(singapura_classes, x))
             label_exists = metadata['class'].apply(lambda label: label in label_transforms)
             metadata_rows = metadata.loc[label_exists]
             metadata['class'] = metadata_rows['class'].loc[label_exists].apply(lambda label: label_transforms[label])
             self.labels.append(metadata)
-            
-            # Find number of classes
-            if categories is None:
-                for i in range(len(self.labels)):
-                    self.categories += list(self.labels[i]['class'])
-                self.categories = sorted(list(set(self.categories)))
-            else:
-                self.categories = categories
-            self.categories = sorted(list(set(self.categories)))
+        # Find number of classes
+        if categories is None:
+            categories = [list(label['class'].unique()) for label in self.labels]
+            categories = [item for sublist in categories for item in sublist]
+        self.categories = sorted(list(set(categories)))
             
     def __getitem__(self, idx: int) -> Tuple[Path, pd.DataFrame]:
         return (self.file_list[idx], self.labels[idx])
