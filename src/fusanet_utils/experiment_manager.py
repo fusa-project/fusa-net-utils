@@ -29,7 +29,7 @@ from .metrics import accuracy, f1_score, error_rate
 logger = logging.getLogger(__name__)
 
 
-def initialize_model(model_path: str, params: Dict, n_classes: int, cuda: bool, finetuning: bool):
+def initialize_model(model_path: str, params: Dict, n_classes: int, cuda: bool):
     pretrained_cache = pathlib.Path("../../pretrained_models")
     if  params['model'] == 'naive':
         model = ConvolutionalNaive(n_classes=n_classes)
@@ -43,15 +43,26 @@ def initialize_model(model_path: str, params: Dict, n_classes: int, cuda: bool, 
             fmin=50,
             fmax=14000
             )
-        if finetuning:
-            if cuda:
-                checkpoint = torch.load(pretrained_cache / 'Wavegram_Logmel_Cnn14_mAP=0.439.pth')
-            else:
-                checkpoint = torch.load(pretrained_cache / 'Wavegram_Logmel_Cnn14_mAP=0.439.pth', map_location=torch.device('cpu'))
-            model.load_state_dict(checkpoint['model'])
-            for param in model.parameters():
-                param.requires_grad = False
-        model.fc_audioset = torch.nn.Sequential(torch.nn.Linear(2048, 1024), torch.nn.Linear(1024, 512), torch.nn.Linear(512, n_classes))
+        if params['finetuning']:
+            cls_in_shape = 2048
+            if params['finetuning'] == 'PANN-pretrained':
+                if cuda:
+                    model = torch.load(pretrained_cache / 'Wavegram_Logmel_Cnn14_mAP=0.439.pth')
+                else:
+                    model = torch.load(pretrained_cache / 'Wavegram_Logmel_Cnn14_mAP=0.439.pth', map_location=torch.device('cpu'))
+            if params['freeze']:
+                for param in model.parameters():
+                    param.requires_grad = False
+            if params['clf_head'] == '1L':
+                model.fc1 = torch.nn.Linear(2048, 2048, bias=True)
+            if params['clf_head'] == '3L':
+                cls_in_shape = 512
+                model.fc1 = torch.nn.Sequential(
+                    torch.nn.Linear(2048, 1024, bias=True),
+                    torch.nn.Linear(1024, 512, bias=True),
+                    torch.nn.Linear(512, 512, bias=True)
+                )
+        model.fc_audioset = torch.nn.Linear(cls_in_shape, n_classes, bias=True)
 
     elif params['model'] == 'PANN-sed':
         model = Cnn14_DecisionLevelAtt(
@@ -63,22 +74,29 @@ def initialize_model(model_path: str, params: Dict, n_classes: int, cuda: bool, 
             fmin=50,
             fmax=14000
             )
-        if finetuning:
+        att_in_shape = 2048
+        if params['finetuning']:
+            if params['finetuning'] == 'PANN-pretrained':
+                model_name = 'Cnn14_DecisionLevelAtt_mAP=0.425.pth'
+            if params['finetuning'] == 'SPASS':
+                model_name = 'Poliphonic-PANN-sed-pink-noise-clipping-2.pt'
             if cuda:
-                #checkpoint = torch.load(pretrained_cache / 'Cnn14_DecisionLevelAtt_mAP=0.425.pth')
-                model = torch.load(pretrained_cache / 'Poliphonic-PANN-sed-pink-noise-clipping-2.pt')
+                model = torch.load(pretrained_cache / model_name)
             else:
-                #checkpoint = torch.load(pretrained_cache / 'Cnn14_DecisionLevelAtt_mAP=0.425.pth', map_location=torch.device('cpu'))
-                model = torch.load(pretrained_cache / 'Poliphonic-PANN-sed-pink-noise-clipping-2.pt', map_location=torch.device('cpu'))
-            for param in model.parameters():
-                param.requires_grad = False
-        #last layer changes
-        model.fc1 = torch.nn.Sequential(
-            torch.nn.Linear(2048, 1024, bias=True),
-            torch.nn.Linear(1024, 512, bias=True),
-            torch.nn.Linear(512, 512, bias=True)
-        )
-        model.att_block = AttBlock(512, n_classes, activation='sigmoid')
+                model = torch.load(pretrained_cache / model_name, map_location=torch.device('cpu'))
+            if params['freeze']:
+                for param in model.parameters():
+                    param.requires_grad = False
+            if params['clf_head'] == '1L':
+                model.fc1 = torch.nn.Linear(2048, 2048, bias=True)
+            if params['clf_head'] == '3L':
+                att_in_shape = 512
+                model.fc1 = torch.nn.Sequential(
+                    torch.nn.Linear(2048, 1024, bias=True),
+                    torch.nn.Linear(1024, 512, bias=True),
+                    torch.nn.Linear(512, 512, bias=True)
+                )
+        model.att_block = AttBlock(att_in_shape, n_classes, activation='sigmoid')
     elif params['model'] == 'ADAVANNE-sed':
         model = SEDnet(n_classes=n_classes)
     elif params['model'] == 'HTS':
