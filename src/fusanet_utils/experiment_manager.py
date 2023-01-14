@@ -79,7 +79,7 @@ def initialize_model(model_path: str, params: Dict, n_classes: int, cuda: bool):
             if params['finetuning'] == 'PANN-pretrained':
                 model_name = 'Cnn14_DecisionLevelAtt_mAP=0.425.pth'
             if params['finetuning'] == 'SPASS':
-                model_name = 'Poliphonic-PANN-sed-pink-noise-clipping-2.pt'
+                model_name = 'Poliphonic-PANN-sed.pt'
             if cuda:
                 model = torch.load(pretrained_cache / model_name)
             else:
@@ -241,7 +241,7 @@ def train(loaders: Tuple, params: Dict, model_path: str, cuda: bool) -> None:
                 if key == 'waveform':
                     marshalled_batch[key] = marshalled_batch[key][:,:,:320002]
                     if 'SINGAPURA' in params["train"]["dataset"]:
-                        amplifier = 10
+                        amplifier = 1
                         marshalled_batch[key] = marshalled_batch[key] * amplifier
             optimizer.zero_grad()
             y = model.forward(marshalled_batch)
@@ -273,7 +273,7 @@ def train(loaders: Tuple, params: Dict, model_path: str, cuda: bool) -> None:
                     if key == 'waveform':
                         marshalled_batch[key] = marshalled_batch[key][:,:,:320002]
                         if 'SINGAPURA' in params["train"]["dataset"]:
-                            amplifier = 10
+                            amplifier = 1
                             marshalled_batch[key] = marshalled_batch[key] * amplifier
                 y = model.forward(marshalled_batch)
                 loss = criterion(marshalled_batch['label'])(y, marshalled_batch['label'])
