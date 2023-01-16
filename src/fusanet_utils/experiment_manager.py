@@ -79,7 +79,7 @@ def initialize_model(model_path: str, params: Dict, n_classes: int, cuda: bool):
             if params['finetuning'] == 'PANN-pretrained':
                 model_name = 'Cnn14_DecisionLevelAtt_mAP=0.425.pth'
             if params['finetuning'] == 'SPASS':
-                model_name = 'Poliphonic-PANN-sed-pink-noise-clipping-2.pt'
+                model_name = 'Poliphonic-PANN-sed.pt'
             if cuda:
                 model = torch.load(pretrained_cache / model_name)
             else:
