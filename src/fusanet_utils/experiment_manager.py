@@ -43,8 +43,8 @@ def initialize_model(model_path: str, params: Dict, n_classes: int, cuda: bool):
             fmin=50,
             fmax=14000
             )
-        if params['finetuning']:
-            cls_in_shape = 2048
+        cls_in_shape = 2048
+        if 'finetuning' in params:
             if params['finetuning'] == 'PANN-pretrained':
                 if cuda:
                     model = torch.load(pretrained_cache / 'Wavegram_Logmel_Cnn14_mAP=0.439.pth')
@@ -75,7 +75,7 @@ def initialize_model(model_path: str, params: Dict, n_classes: int, cuda: bool):
             fmax=14000
             )
         att_in_shape = 2048
-        if params['finetuning']:
+        if 'finetuning' in params:
             if params['finetuning'] == 'PANN-pretrained':
                 model_name = 'Cnn14_DecisionLevelAtt_mAP=0.425.pth'
             if params['finetuning'] == 'SPASS':
@@ -97,6 +97,7 @@ def initialize_model(model_path: str, params: Dict, n_classes: int, cuda: bool):
                     torch.nn.Linear(512, 512, bias=True)
                 )
         model.att_block = AttBlock(att_in_shape, n_classes, activation='sigmoid')
+        
     elif params['model'] == 'ADAVANNE-sed':
         model = SEDnet(n_classes=n_classes)
     elif params['model'] == 'HTS':
@@ -241,7 +242,7 @@ def train(loaders: Tuple, params: Dict, model_path: str, cuda: bool) -> None:
                 if key == 'waveform':
                     marshalled_batch[key] = marshalled_batch[key][:,:,:320002]
                     if 'SINGAPURA' in params["train"]["dataset"]:
-                        amplifier = 10
+                        amplifier = 1
                         marshalled_batch[key] = marshalled_batch[key] * amplifier
             optimizer.zero_grad()
             y = model.forward(marshalled_batch)
@@ -273,7 +274,7 @@ def train(loaders: Tuple, params: Dict, model_path: str, cuda: bool) -> None:
                     if key == 'waveform':
                         marshalled_batch[key] = marshalled_batch[key][:,:,:320002]
                         if 'SINGAPURA' in params["train"]["dataset"]:
-                            amplifier = 10
+                            amplifier = 1
                             marshalled_batch[key] = marshalled_batch[key] * amplifier
                 y = model.forward(marshalled_batch)
                 loss = criterion(marshalled_batch['label'])(y, marshalled_batch['label'])
