@@ -22,7 +22,7 @@ from .datasets.aumilab import AUMILAB
 from .models.naive import ConvolutionalNaive
 from .models.PANN_tag import Wavegram_Logmel_Cnn14
 from .models.PANN_sed import Cnn14_DecisionLevelAtt, AttBlock
-from .models.ADAVANNE_sed import SEDnet
+from .models.ADAVANNE_sed import SEDnet, TimeDistributed
 from .models.HTS.htsat import HTSAT_Swin_Transformer
 from .metrics import accuracy, f1_score, error_rate
 
@@ -100,6 +100,23 @@ def initialize_model(model_path: str, params: Dict, n_classes: int, cuda: bool):
         
     elif params['model'] == 'ADAVANNE-sed':
         model = SEDnet(n_classes=n_classes)
+        if 'finetuning' in params:
+            if params['finetuning'] == 'SPASS':
+                model_name = 'Poliphonic-ADAVANNE-sed.pt'
+            if cuda:
+                model = torch.load(pretrained_cache / model_name)
+            else:
+                model = torch.load(pretrained_cache / model_name, map_location=torch.device('cpu'))
+            if params['freeze']:
+                for param in model.parameters():
+                    param.requires_grad = False
+            if params['clf_head'] == '1L':
+                model.FC = torch.nn.Sequential(
+                    TimeDistributed(torch.nn.Linear(64, out_features=32)),
+                    torch.nn.Dropout(p=0.5))
+        model.output = torch.nn.Sequential(
+            TimeDistributed(torch.nn.Linear(32, out_features=n_classes)))
+        
     elif params['model'] == 'HTS':
         model = HTSAT_Swin_Transformer(
             classes_num=n_classes,
@@ -110,6 +127,26 @@ def initialize_model(model_path: str, params: Dict, n_classes: int, cuda: bool):
             fmin=50,
             fmax=14000
         )
+        if 'finetuning' in params:
+            if params['finetuning'] == 'SPASS':
+                model_name = 'Poliphonic-HTS.pt'
+            if cuda:
+                model = torch.load(pretrained_cache / model_name)
+            else:
+                model = torch.load(pretrained_cache / model_name, map_location=torch.device('cpu'))
+            if params['freeze']:
+                for param in model.parameters():
+                    param.requires_grad = False
+            if params['clf_head'] == '1L':
+                SF = model.spec_size // (2 ** (len(model.depths) - 1)) // model.patch_stride[0] // model.freq_ratio
+                model.tscam_conv = torch.nn.Conv2d(
+                    in_channels = model.num_features,
+                    out_channels = n_classes,
+                    kernel_size = (SF, 3),
+                    padding = (0,1)
+                )
+        model.head = torch.nn.Linear(n_classes, n_classes)
+
     torch.save(model, model_path)
 
 def create_dataset(root_path, params: Dict, stage: str='train'):
