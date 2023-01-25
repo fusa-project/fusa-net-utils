@@ -1,15 +1,23 @@
 import numpy as np
 import soundfile as sf
 import pydub
+import logging
+
+logger = logging.getLogger(__name__)
 
 def read_soundfile(file):
-    samples, origin_sr = sf.read(file)
-    samples = samples[:, np.newaxis].astype(np.float32)
-    return samples, origin_sr
+    try:
+        samples, origin_sr = sf.read(file)
+        samples = samples[:, np.newaxis].astype(np.float32)
+        return samples, origin_sr
+    except:
+        return None, None
 
 def read_pydub(file):
+    logger.info("len of file :",len(file))
     try:
         asegment = pydub.AudioSegment.from_file(file)
+        logger.info("pydub read sucessfully")
         origin_sr = asegment.frame_rate
         channel_sounds = asegment.split_to_mono()
         samples = [s.get_array_of_samples() for s in channel_sounds]
@@ -19,3 +27,5 @@ def read_pydub(file):
         return fp_arr, origin_sr
     except pydub.exceptions.CouldntDecodeError:
         return None, None
+    except Exception as error:
+        logger.info("Error :", error)

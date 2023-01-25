@@ -277,7 +277,6 @@ def train(loaders: Tuple, params: Dict, model_path: str, cuda: bool) -> None:
                     continue
                 marshalled_batch[key] = batch[key].to(device, non_blocking=True)
                 if key == 'waveform':
-                    marshalled_batch[key] = marshalled_batch[key][:,:,:320002]
                     if 'SINGAPURA' in params["train"]["dataset"]:
                         amplifier = 1
                         marshalled_batch[key] = marshalled_batch[key] * amplifier
@@ -309,7 +308,6 @@ def train(loaders: Tuple, params: Dict, model_path: str, cuda: bool) -> None:
                         continue
                     marshalled_batch[key] = batch[key].to(device, non_blocking=True)
                     if key == 'waveform':
-                        marshalled_batch[key] = marshalled_batch[key][:,:,:320002]
                         if 'SINGAPURA' in params["train"]["dataset"]:
                             amplifier = 1
                             marshalled_batch[key] = marshalled_batch[key] * amplifier
