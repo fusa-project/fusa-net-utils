@@ -9,18 +9,19 @@ def read_soundfile(file):
     try:
         samples, origin_sr = sf.read(file)
         samples = samples[:, np.newaxis].astype(np.float32)
+        logger.info("len of samples :",len(samples))
         return samples, origin_sr
     except:
         return None, None
 
 def read_pydub(file):
-    logger.info("len of file :",len(file))
     try:
         asegment = pydub.AudioSegment.from_file(file)
         logger.info("pydub read sucessfully")
         origin_sr = asegment.frame_rate
         channel_sounds = asegment.split_to_mono()
         samples = [s.get_array_of_samples() for s in channel_sounds]
+        logger.info("len of samples :",len(samples))
         # Convert to float32
         fp_arr = np.array(samples).T.astype(np.float32)
         fp_arr /= np.iinfo(samples[0].typecode).max
