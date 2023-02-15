@@ -23,7 +23,7 @@ def read_pydub(file):
         logger.debug("channel_sounds len:", len(channel_sounds))
         samples = [s.get_array_of_samples() for s in channel_sounds]
         logger.debug("first array_of_samples:", len(channel_sounds[0].get_array_of_samples()))
-        #logger.info("len of samples :",len(samples))
+        logger.info("len of samples :",len(samples))
         # Convert to float32
         fp_arr = np.array(samples).T.astype(np.float32)
         fp_arr /= np.iinfo(samples[0].typecode).max
