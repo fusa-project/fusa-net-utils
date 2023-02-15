@@ -51,6 +51,8 @@ class Collate_and_transform:
         data_keys = list(batch[0].keys())
         logger.debug(f"data_keys: {data_keys}")
         logger.debug(f"batch[0]: {batch[0]}")
+        logger.info(f"data_keys: {data_keys}")
+        logger.info(f"batch[0]: {batch[0]}")
         if batch[0]['label'].ndim == 1:  # TAG
             data_keys.remove('label')
         data_keys.remove('filename')
