@@ -49,6 +49,8 @@ class Collate_and_transform:
 
     def __call__(self, batch: List[Dict]) -> Dict:
         data_keys = list(batch[0].keys())
+        logger.debug(f"data_keys: {data_keys}")
+        logger.debug(f"batch[0]: {batch[0]}")
         if batch[0]['label'].ndim == 1:  # TAG
             data_keys.remove('label')
         data_keys.remove('filename')
