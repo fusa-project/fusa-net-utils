@@ -22,7 +22,7 @@ def read_pydub(file):
         channel_sounds = asegment.split_to_mono()
         logger.debug("channel_sounds len:", len(channel_sounds))
         samples = [s.get_array_of_samples() for s in channel_sounds]
-        logger.debug("first array_of_samples:", channel_sounds[0].get_array_of_samples())
+        logger.debug("first array_of_samples:", len(channel_sounds[0].get_array_of_samples()))
         #logger.info("len of samples :",len(samples))
         # Convert to float32
         fp_arr = np.array(samples).T.astype(np.float32)
