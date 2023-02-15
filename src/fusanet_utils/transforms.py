@@ -53,7 +53,7 @@ class Collate_and_transform:
         try:
             if batch[0]['label'].ndim == 1:  # TAG
                 data_keys.remove('label')
-        except AttributeError:
+        except:
             data_keys.remove('label')
         data_keys.remove('filename')
         for key in data_keys:
