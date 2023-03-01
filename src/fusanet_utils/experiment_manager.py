@@ -176,10 +176,10 @@ def create_dataloaders(dataset, params: Dict):
         train_size = int(params["train"]["train_percent"]*len(dataset) * params["train"]["ft_percent"])
         valid_size = int(len(dataset)* params["train"]["ft_percent"]) - train_size
         test_size = len(dataset) - train_size - valid_size
-    else:
+    if 'test_percent':
         train_size = int(params["train"]["train_percent"]*len(dataset))
-        valid_size = len(dataset) - train_size
-        test_size = 0
+        test_size = int(params["train"]["test_percent"]*len(dataset))
+        valid_size = len(dataset) - train_size - test_size
     #train_subset, valid_subset = random_split(dataset, (train_size, valid_size), generator=torch.Generator().manual_seed(params["train"]["random_seed"]))
     train_collate = Collate_and_transform(params['features'])
     train_subset, valid_subset, test_subset = random_split(dataset, (train_size, valid_size, test_size), generator=torch.Generator().manual_seed(params["train"]["random_seed"]))
