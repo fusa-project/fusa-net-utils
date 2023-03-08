@@ -180,10 +180,6 @@ def create_dataloaders(dataset, params: Dict):
         train_size = int(params["train"]["train_percent"]*len(dataset))
         test_size = int(params["train"]["test_percent"]*len(dataset))
         valid_size = len(dataset) - train_size - test_size
-    else:
-        train_size = int(params["train"]["train_percent"]*len(dataset))
-        valid_size = len(dataset) - train_size
-        test_size = 0
     train_collate = Collate_and_transform(params['features'])
     train_subset, valid_subset, test_subset = random_split(dataset, (train_size, valid_size, test_size), generator=torch.Generator().manual_seed(params["train"]["random_seed"]))
     if 'augmentation' in params['train']:
@@ -265,7 +261,6 @@ def train(loaders: Tuple, params: Dict, model_path: str, cuda: bool) -> None:
         device = 'cpu'
     logger.info(f'Using {device}')
     logger.info(f"Training size {params['train']['train_percent']}")
-    logger.info(f"Test size {params['train']['test_percent']}")
     early_stopping = EarlyStopping(params["train"]["stopping_criteria"], params["train"]["patience"])
     clip = 10.0
     for epoch in range(params["train"]["nepochs"]):
