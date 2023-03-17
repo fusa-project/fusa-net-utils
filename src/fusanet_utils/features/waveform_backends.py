@@ -9,7 +9,6 @@ def read_soundfile(file):
     try:
         samples, origin_sr = sf.read(file)
         samples = samples[:, np.newaxis].astype(np.float32)
-        logger.info("len of samples :",len(samples))
         return samples, origin_sr
     except:
         return None, None
