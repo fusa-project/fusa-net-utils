@@ -77,7 +77,7 @@ def initialize_model(model_path: str, params: Dict, n_classes: int, cuda: bool):
         att_in_shape = 2048
         if 'finetuning' in params:
             if params['finetuning'] == 'PANN-pretrained':
-                model_name = 'Cnn14_DecisionLevelAtt_mAP=0.425.pth'
+                model_name = 'PANN-sed-Audioset.pt'
             if params['finetuning'] == 'SPASS':
                 model_name = 'Poliphonic-PANN-sed.pt'
             if cuda:
