@@ -11,13 +11,15 @@ logger = logging.getLogger(__name__)
 
 class AUMILAB(Dataset):
 
-    def __init__(self, repo_path: Union[str, Path], categories: List=None, use_original_labels: bool=False):
+    def __init__(self, repo_path: Union[str, Path], ten_seconds: bool=True, categories: List=None, use_original_labels: bool=False):
         if isinstance(repo_path, str):
             repo_path = Path(repo_path)
         if not use_original_labels:
             label_transforms = get_label_transforms(repo_path, "SPASS")
         self.file_list, self.labels, self.categories = [], [], []
         dataset_path = repo_path / "datasets" / 'AUMILAB'
+        if ten_seconds:
+            dataset_path = repo_path / "datasets" / 'AUMILAB10s'
         df = pd.read_csv(dataset_path / 'metadata' / 'metadata.txt', delim_whitespace=True)
         for file_name, metadata in df.groupby('filename'):
             file_path = dataset_path / 'audios' / file_name
