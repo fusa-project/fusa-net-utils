@@ -19,7 +19,7 @@ def get_waveform(file: Union[str, pathlib.Path, bytes, bytearray], params: Dict,
     logger.info("read_pydub finish")
     if samples is None:
         logger.error(f"Could not read {file} with pudub, defaulting to soundfile")
-    samples, origin_sr = read_soundfile(file)
+        samples, origin_sr = read_soundfile(file)
     if len(samples.shape) == 3:
         samples = samples[:, 0, :]
     waveform = torch.from_numpy(samples).T
