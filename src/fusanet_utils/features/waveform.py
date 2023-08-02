@@ -22,7 +22,9 @@ def get_waveform(file: Union[str, pathlib.Path, bytes, bytearray], params: Dict,
         samples, origin_sr = read_pydub(file)
     if len(samples.shape) == 3:
         samples = samples[:, 0, :]
-    waveform = torch.from_numpy(samples).T    
+    waveform = torch.from_numpy(samples).T
+    logger.info("SAMPLES:", type(samples), samples)
+    logger.info("waveform shape:", waveform.shape)
     logger.debug("insider finish get_waveform")
     return waveform_preprocessing(waveform, origin_sr, params, global_normalizer)
 
