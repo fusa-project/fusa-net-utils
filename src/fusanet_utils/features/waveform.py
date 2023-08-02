@@ -15,11 +15,11 @@ def get_waveform(file: Union[str, pathlib.Path, bytes, bytearray], params: Dict,
     else:
         logger.debug(f"Loading: {file}")
     logger.info("get_waveform after IO")
-    samples, origin_sr = read_pydub(file)
-    logger.info("read_pydub finish")
+    samples, origin_sr = read_soundfile(file)
+    logger.info("read_soundfile finish")
     if samples is None:
-        logger.error(f"Could not read {file} with pudub, defaulting to soundfile")
-        samples, origin_sr = read_soundfile(file)
+        logger.error(f"Could not read {file} with soundfile, defaulting to pudub")
+        samples, origin_sr = read_pydub(file)
     if len(samples.shape) == 3:
         samples = samples[:, 0, :]
     waveform = torch.from_numpy(samples).T
@@ -28,13 +28,14 @@ def get_waveform(file: Union[str, pathlib.Path, bytes, bytearray], params: Dict,
     return waveform_preprocessing(waveform, origin_sr, params, global_normalizer)
 
 def waveform_preprocessing(waveform: torch.Tensor, origin_sr: int, params: Dict, global_normalizer=None) -> torch.Tensor:
+    logger.info(f"Initial waveform shape: {waveform.shape}")
     origin_ch = waveform.size()[0]
     target_sr = params["sampling_rate"]
     target_ch = params["number_of_channels"]
     if not origin_sr == target_sr:
-        logger.debug(f"Original shape: {waveform.shape} and sampling rate {origin_sr}")
+        logger.info(f"Original shape: {waveform.shape} and sampling rate {origin_sr}")
         waveform = torchaudio.transforms.Resample(origin_sr, target_sr)(waveform)
-        logger.debug(f"Resampled shape: {waveform.shape} and sampling rate {target_sr}")
+        logger.info(f"Resampled shape: {waveform.shape} and sampling rate {target_sr}")
     # TODO: Separar las pistas como audios independientes (duplicar a nivel de dataset)
     if target_ch == 1 and origin_ch == 2:
         how_to = params['combine_channels']
@@ -53,6 +54,7 @@ def waveform_preprocessing(waveform: torch.Tensor, origin_sr: int, params: Dict,
             waveform = local_normalizer(waveform, params)   
         elif params['waveform_normalization']['scope'] == 'global' and global_normalizer is not None:
             waveform = global_normalizer(waveform)
+    logger.info(f"Final waveform shape: {waveform.shape}")
     return waveform
 
 def zscore(waveform):
