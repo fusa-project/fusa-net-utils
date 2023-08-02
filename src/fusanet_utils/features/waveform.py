@@ -15,15 +15,14 @@ def get_waveform(file: Union[str, pathlib.Path, bytes, bytearray], params: Dict,
     else:
         logger.debug(f"Loading: {file}")
     logger.info("get_waveform after IO")
-    samples, origin_sr = read_soundfile(file)
-    logger.info("read_soundfile finish")
+    samples, origin_sr = read_pydub(file)
+    logger.info("read_pydub finish")
     if samples is None:
-        logger.error(f"Could not read {file} with soundfile, defaulting to pydub")
-        samples, origin_sr = read_pydub(file)
+        logger.error(f"Could not read {file} with pudub, defaulting to soundfile")
+    samples, origin_sr = read_soundfile(file)
     if len(samples.shape) == 3:
         samples = samples[:, 0, :]
     waveform = torch.from_numpy(samples).T
-    logger.info(f"SAMPLES: {type(samples)} - {samples}")
     logger.info(f"waveform shape: {waveform.shape}")
     logger.debug("insider finish get_waveform")
     return waveform_preprocessing(waveform, origin_sr, params, global_normalizer)
