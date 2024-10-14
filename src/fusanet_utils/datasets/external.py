@@ -211,10 +211,11 @@ class SINGAPURA(Dataset):
 
 class VitGlobalROADS(Dataset):
 
-    def __init__(self, repo_path: Union[str, Path], categories: List=None):
+    def __init__(self, repo_path: Union[str, Path], categories: List=None, use_original_labels: bool=False):
         if isinstance(repo_path, str):
             repo_path = Path(repo_path)
-        label_transforms = get_label_transforms(repo_path, "Vitglobal-ROADS")
+        if not use_original_labels:
+            label_transforms = get_label_transforms(repo_path, "Vitglobal-ROADS")
         logger.warning(f"label_transforms: {label_transforms}")
         self.file_list, self.labels, self.categories = [], [], []
         dataset_path = repo_path / "datasets" / 'VitGlobal-ROADS'
@@ -229,9 +230,10 @@ class VitGlobalROADS(Dataset):
             metadata = metadata.rename(columns={"label": "class",
                                                 "start": "start (s)",
                                                 "end": "end (s)"})
-            label_exists = metadata['class'].apply(lambda label: label in label_transforms)
-            metadata_rows = metadata.loc[label_exists]
-            metadata['class'] = metadata_rows['class'].loc[label_exists].apply(lambda label: label_transforms[label])
+            if not use_original_labels:
+                label_exists = metadata['class'].apply(lambda label: label in label_transforms)
+                metadata_rows = metadata.loc[label_exists]
+                metadata['class'] = metadata_rows['class'].loc[label_exists].apply(lambda label: label_transforms[label])
             self.labels.append(metadata)
         # Find number of classes
         logger.warning(f"self.labels: {self.labels}")
