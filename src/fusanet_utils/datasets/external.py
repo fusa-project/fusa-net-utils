@@ -215,6 +215,7 @@ class VitGlobalROADS(Dataset):
         if isinstance(repo_path, str):
             repo_path = Path(repo_path)
         label_transforms = get_label_transforms(repo_path, "Vitglobal-ROADS")
+        logger.warning(f"label_transforms: {label_transforms}")
         self.file_list, self.labels, self.categories = [], [], []
         dataset_path = repo_path / "datasets" / 'VitGlobal-ROADS'
         df = pd.read_csv(dataset_path / 'metadata' / 'metadata.txt', delim_whitespace=True)
@@ -233,9 +234,11 @@ class VitGlobalROADS(Dataset):
             metadata['class'] = metadata_rows['class'].loc[label_exists].apply(lambda label: label_transforms[label])
             self.labels.append(metadata)
         # Find number of classes
+        logger.warning(f"self.labels: {self.labels}")
         if categories is None:
             categories = df['label'].unique()
         self.categories = sorted(list(set(categories)))     
+        logger.warning(f"self.categories {self.categories}")
         
     def __getitem__(self, idx: int) -> Tuple[Path, pd.DataFrame]:
         return (self.file_list[idx], self.labels[idx])
