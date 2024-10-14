@@ -15,7 +15,7 @@ from torchsampler import ImbalancedDatasetSampler
 
 from .transforms import Collate_and_transform
 from .augmentations.additive_noise import PinkNoise, WhiteNoise
-from .datasets.external import ESC, UrbanSound8K, VitGlobal, SINGAPURA
+from .datasets.external import ESC, UrbanSound8K, VitGlobal, SINGAPURA, VitGlobalROADS
 from .datasets.fusa import FUSA_dataset
 from .datasets.simulated import SimulatedPoliphonic
 from .datasets.aumilab import AUMILAB
@@ -170,6 +170,8 @@ def create_dataset(root_path, params: Dict, stage: str='train'):
         dataset.append(AUMILAB(root_path, True, None, True))
     if 'SINGAPURA' in params[stage]['dataset']:
         dataset.append(SINGAPURA(root_path))
+    if 'VitGlobalROADS' in params[stage]['dataset']:
+        dataset.append(VitGlobalROADS(root_path, None, True))
     # Create dataset for the experiment and save dictionary of classes index to names
     return FUSA_dataset(ConcatDataset(dataset), params)
 
