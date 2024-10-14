@@ -171,7 +171,7 @@ def create_dataset(root_path, params: Dict, stage: str='train'):
     if 'SINGAPURA' in params[stage]['dataset']:
         dataset.append(SINGAPURA(root_path))
     if 'VitGlobalROADS' in params[stage]['dataset']:
-        dataset.append(VitGlobalROADS(root_path, None, True))
+        dataset.append(VitGlobalROADS(root_path, None))
     # Create dataset for the experiment and save dictionary of classes index to names
     return FUSA_dataset(ConcatDataset(dataset), params)
 
