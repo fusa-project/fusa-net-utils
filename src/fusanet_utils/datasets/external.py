@@ -216,7 +216,7 @@ class VitGlobalROADS(Dataset):
             repo_path = Path(repo_path)
         if not use_original_labels:
             label_transforms = get_label_transforms(repo_path, "Vitglobal-ROADS")
-        logger.warning(f"label_transforms: {label_transforms}")
+            logger.warning(f"label_transforms: {label_transforms}")
         self.file_list, self.labels, self.categories = [], [], []
         dataset_path = repo_path / "datasets" / 'VitGlobal-ROADS'
         df = pd.read_csv(dataset_path / 'metadata' / 'metadata.txt', delim_whitespace=True)
